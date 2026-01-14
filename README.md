@@ -23,7 +23,7 @@
 
 ### 📊 数据来源
 - **行情数据**: AkShare（免费）、Tushare、Baostock、YFinance
-- **新闻搜索**: Tavily、SerpAPI
+- **新闻搜索**: Bocha、Tavily、SerpAPI
 - **AI 分析**: 
   - 主力：Google Gemini（gemini-3-flash-preview）—— [免费获取](https://aistudio.google.com/)
   - 备选：应大家要求，也支持了OpenAI 兼容 API（DeepSeek、通义千问、Moonshot 等）
@@ -93,6 +93,7 @@
 | Secret 名称 | 说明 | 必填 |
 |------------|------|:----:|
 | `STOCK_LIST` | 自选股代码，如 `600519,300750,002594` | ✅ |
+| `BOCHA_API_KEYS` | [博查搜索](https://open.bocha.cn/) Web Search API（中文搜索优化，支持AI摘要，多个key用逗号分隔） | 推荐 |
 | `TAVILY_API_KEYS` | [Tavily](https://tavily.com/) 搜索 API（新闻搜索） | 推荐 |
 | `SERPAPI_API_KEYS` | [SerpAPI](https://serpapi.com/) 备用搜索 | 可选 |
 | `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/) Token | 可选 |
@@ -194,13 +195,14 @@ WECHAT_WEBHOOK_URL=https://qyapi...     # 企业微信机器人
 STOCK_LIST=600519,300750,002594         # 自选股列表
 
 # === 推荐 ===
-TAVILY_API_KEYS=your_tavily_key         # 新闻搜索
+BOCHA_API_KEYS=your_bocha_key            # 博查搜索（中文优化，支持AI摘要，多个key用逗号分隔）
+TAVILY_API_KEYS=your_tavily_key         # Tavily搜索
 GEMINI_MODEL=gemini-3-flash-preview     # 主模型
 GEMINI_MODEL_FALLBACK=gemini-2.5-flash  # 备选模型
 
 # === 可选 ===
 TUSHARE_TOKEN=your_token                # Tushare数据源
-SERPAPI_API_KEYS=your_serpapi_key       # 备用搜索
+SERPAPI_API_KEYS=your_serpapi_key       # SerpAPI备用搜索
 ```
 
 ### 定时配置（GitHub Actions）

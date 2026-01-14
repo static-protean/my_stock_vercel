@@ -97,6 +97,8 @@ jobs:
           echo "运行模式: $MODE"
           echo "自选股: $STOCK_LIST"
           echo "时间: $(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')"
+          echo "BOCHA_API_KEYS 是否配置: $([ -n "$BOCHA_API_KEYS" ] && echo '是' || echo '否')"
+          echo "BOCHA_API_KEYS 长度: ${#BOCHA_API_KEYS}"
           echo "=========================================="
           
           if [ "$MODE" = "market-only" ]; then

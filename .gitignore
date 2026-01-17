@@ -62,6 +62,8 @@ Thumbs.db
 .coverage
 htmlcov/
 
-docs/
+local/
 
 run.sh
+
+verify_*.py

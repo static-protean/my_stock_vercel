@@ -70,23 +70,11 @@
 | `EMAIL_SENDER` | 发件人邮箱（如 `xxx@qq.com`） | 可选 |
 | `EMAIL_PASSWORD` | 邮箱授权码（非登录密码） | 可选 |
 | `EMAIL_RECEIVERS` | 收件人邮箱（多个用逗号分隔，留空则发给自己） | 可选 |
-| `CUSTOM_WEBHOOK_URLS` | 自定义 Webhook（多个用逗号分隔） | 可选 |                                                                                                            | 可选 |
-| `FEISHU_APP_ID` | 飞书应用ID，需要去（[开发者后台](https://open.feishu.cn/app)创建应用，步骤参考[这里](https://blog.csdn.net/qq_38423105/article/details/149316776)） | 可选 |
-| `FEISHU_APP_SECRET` | 飞书应用APP_SECRET                                                                                                            | 可选 |
-| `FEISHU_FOLDER_TOKEN` | 飞书文档云盘文件夹Key(地址栏 folder 后面参数)  | 可选 |  
+| `CUSTOM_WEBHOOK_URLS` | 自定义 Webhook（支持钉钉等，多个用逗号分隔） | 可选 |
 
-> *注：至少配置一个渠道，配置多个则同时推送到所有渠道
-> 
-> 自定义 Webhook 支持：钉钉、Discord、Slack、Bark、自建服务等任意支持 POST JSON 的 Webhook
-> 
-
-> 通过飞书应用创建的飞书文档，里面的内容不会出现已截断的情况。应用创建好后需要执行以下操作：
-> 
-> 1.Github 配置对应 Secret
-> 
-> 2.创建群组，在群组设置->群机器人，将创建的应用添加到群组内，算上飞书 Webhook，此时群组应该会有两个机器人 
-> 
-> 3.点击飞书云盘文件夹的“...”,将群组添加为协作者，权限设置为可管理
+> *注：至少配置一个渠道，配置多个则同时推送
+>
+> 📖 更多配置（Pushover 手机推送、飞书云文档等）请参考 [完整配置指南](docs/full-guide.md)
 
 **其他配置**
 
@@ -110,39 +98,9 @@
 
 默认每个工作日 **18:00（北京时间）** 自动执行
 
-### 方式二：本地运行
+### 方式二：本地运行 / Docker 部署
 
-```bash
-# 克隆仓库
-git clone https://github.com/ZhuLinsen/daily_stock_analysis.git
-cd daily_stock_analysis
-
-# 安装依赖
-pip install -r requirements.txt
-
-# 配置环境变量
-cp .env.example .env
-vim .env  # 填入你的 API Key
-
-# 运行
-python main.py                    # 完整分析
-python main.py --market-review    # 仅大盘复盘
-python main.py --schedule         # 定时任务模式
-```
-
-### 方式三：Docker 部署
-
-```bash
-# 配置环境变量
-cp .env.example .env
-vim .env
-
-# 一键启动
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-```
+> 📖 本地运行、Docker 部署详细步骤请参考 [完整配置指南](docs/full-guide.md)
 
 ## 📱 推送效果
 
@@ -186,41 +144,7 @@ docker-compose logs -f
 
 ## ⚙️ 配置说明
 
-### 环境变量
-
-```bash
-# === 必填 ===
-GEMINI_API_KEY=your_gemini_key          # Gemini AI
-WECHAT_WEBHOOK_URL=https://qyapi...     # 企业微信机器人
-STOCK_LIST=600519,300750,002594         # 自选股列表
-
-# === 推荐 ===
-TAVILY_API_KEYS=your_tavily_key         # Tavily搜索
-GEMINI_MODEL=gemini-3-flash-preview     # 主模型
-GEMINI_MODEL_FALLBACK=gemini-2.5-flash  # 备选模型
-
-# === 可选 ===
-BOCHA_API_KEYS=your_bocha_key           # 博查搜索（中文优化，支持AI摘要，多个key用逗号分隔）
-TUSHARE_TOKEN=your_token                # Tushare数据源
-SERPAPI_API_KEYS=your_serpapi_key       # 备用搜索
-```
-
-### 定时配置（GitHub Actions）
-
-编辑 `.github/workflows/daily_analysis.yml`:
-
-```yaml
-schedule:
-  # UTC 时间，北京时间 = UTC + 8
-  - cron: '0 10 * * 1-5'   # 周一到周五 18:00（北京时间）
-```
-
-| 北京时间 | UTC cron |
-|---------|----------|
-| 09:30 | `'30 1 * * 1-5'` |
-| 15:00 | `'0 7 * * 1-5'` |
-| 18:00 | `'0 10 * * 1-5'` |
-
+> 📖 完整环境变量、定时任务配置请参考 [完整配置指南](docs/full-guide.md)
 ## 📁 项目结构
 
 ```
@@ -257,14 +181,7 @@ daily_stock_analysis/
 
 ### 🤖 AI 模型支持
 - [x] Google Gemini（主力，免费额度）
-- [x] OpenAI 兼容 API（支持以下模型）
-  - [x] OpenAI GPT-4/4o
-  - [x] DeepSeek
-  - [x] 通义千问
-  - [x] Moonshot（月之暗面）
-  - [x] 智谱 GLM
-- [ ] Claude
-- [ ] 文心一言
+- [x] OpenAI 兼容 API（支持 GPT-4/DeepSeek/通义千问/Claude/文心一言 等）
 - [x] 本地模型（Ollama）
 
 ### 📊 数据源扩展
@@ -272,20 +189,16 @@ daily_stock_analysis/
 - [x] Tushare Pro
 - [x] Baostock
 - [x] YFinance
-- [ ] 东方财富 API
-- [ ] 同花顺 API
-- [ ] 新浪财经
 
 ### 🎯 功能增强
 - [x] 决策仪表盘
 - [x] 大盘复盘
 - [x] 定时推送
 - [x] GitHub Actions
+- [x] 港股支持
 - [ ] Web 管理界面
-- [ ] 自选股动态管理 API
 - [ ] 历史分析回测
-- [ ] 多策略支持
-- [ ] 港股/美股支持
+- [ ] 美股支持
 
 ## 🤝 贡献
 

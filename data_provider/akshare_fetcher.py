@@ -220,7 +220,7 @@ def _is_hk_code(stock_code: str) -> bool:
     
     港股代码规则：
     - 5位数字代码，如 '00700' (腾讯控股)
-    - 部分港股代码可能带有前缀，如 'hk00700'
+    - 部分港股代码可能带有前缀，如 'hk00700', 'hk1810'
     
     Args:
         stock_code: 股票代码
@@ -228,9 +228,13 @@ def _is_hk_code(stock_code: str) -> bool:
     Returns:
         True 表示是港股代码，False 表示不是港股代码
     """
-    # 去除可能的 'hk' 前缀
-    code = stock_code.lower().replace('hk', '')
-    # 港股代码为5位数字
+    # 去除可能的 'hk' 前缀并检查是否为纯数字
+    code = stock_code.lower()
+    if code.startswith('hk'):
+        # 带 hk 前缀的一定是港股，去掉前缀后应为纯数字（1-5位）
+        numeric_part = code[2:]
+        return numeric_part.isdigit() and 1 <= len(numeric_part) <= 5
+    # 无前缀时，5位纯数字才视为港股（避免误判 A 股代码）
     return code.isdigit() and len(code) == 5
 
 
@@ -584,22 +588,38 @@ class AkshareFetcher(BaseFetcher):
                 df = _realtime_cache['data']
                 logger.debug(f"[缓存命中] 使用缓存的A股实时行情数据")
             else:
-                # 防封禁策略
-                self._set_random_user_agent()
-                self._enforce_rate_limit()
-                
-                logger.info(f"[API调用] ak.stock_zh_a_spot_em() 获取A股实时行情...")
-                import time as _time
-                api_start = _time.time()
-                
-                df = ak.stock_zh_a_spot_em()
-                
-                api_elapsed = _time.time() - api_start
-                logger.info(f"[API返回] ak.stock_zh_a_spot_em 成功: 返回 {len(df)} 只股票, 耗时 {api_elapsed:.2f}s")
-                
-                # 更新缓存
+                last_error: Optional[Exception] = None
+                df = None
+                for attempt in range(1, 3):
+                    try:
+                        # 防封禁策略
+                        self._set_random_user_agent()
+                        self._enforce_rate_limit()
+
+                        logger.info(f"[API调用] ak.stock_zh_a_spot_em() 获取A股实时行情... (attempt {attempt}/2)")
+                        import time as _time
+                        api_start = _time.time()
+
+                        df = ak.stock_zh_a_spot_em()
+
+                        api_elapsed = _time.time() - api_start
+                        logger.info(f"[API返回] ak.stock_zh_a_spot_em 成功: 返回 {len(df)} 只股票, 耗时 {api_elapsed:.2f}s")
+                        break
+                    except Exception as e:
+                        last_error = e
+                        logger.warning(f"[API错误] ak.stock_zh_a_spot_em 获取失败 (attempt {attempt}/2): {e}")
+                        time.sleep(min(2 ** attempt, 5))
+
+                # 更新缓存：成功缓存数据；失败也缓存空数据，避免同一轮任务对同一接口反复请求
+                if df is None:
+                    logger.error(f"[API错误] ak.stock_zh_a_spot_em 最终失败: {last_error}")
+                    df = pd.DataFrame()
                 _realtime_cache['data'] = df
                 _realtime_cache['timestamp'] = current_time
+
+            if df is None or df.empty:
+                logger.warning(f"[实时行情] A股实时行情数据为空，跳过 {stock_code}")
+                return None
             
             # 查找指定股票
             row = df[df['代码'] == stock_code]
@@ -668,22 +688,37 @@ class AkshareFetcher(BaseFetcher):
                 df = _etf_realtime_cache['data']
                 logger.debug(f"[缓存命中] 使用缓存的ETF实时行情数据")
             else:
-                # 防封禁策略
-                self._set_random_user_agent()
-                self._enforce_rate_limit()
-                
-                logger.info(f"[API调用] ak.fund_etf_spot_em() 获取ETF实时行情...")
-                import time as _time
-                api_start = _time.time()
-                
-                df = ak.fund_etf_spot_em()
-                
-                api_elapsed = _time.time() - api_start
-                logger.info(f"[API返回] ak.fund_etf_spot_em 成功: 返回 {len(df)} 只ETF, 耗时 {api_elapsed:.2f}s")
-                
-                # 更新缓存
+                last_error: Optional[Exception] = None
+                df = None
+                for attempt in range(1, 3):
+                    try:
+                        # 防封禁策略
+                        self._set_random_user_agent()
+                        self._enforce_rate_limit()
+
+                        logger.info(f"[API调用] ak.fund_etf_spot_em() 获取ETF实时行情... (attempt {attempt}/2)")
+                        import time as _time
+                        api_start = _time.time()
+
+                        df = ak.fund_etf_spot_em()
+
+                        api_elapsed = _time.time() - api_start
+                        logger.info(f"[API返回] ak.fund_etf_spot_em 成功: 返回 {len(df)} 只ETF, 耗时 {api_elapsed:.2f}s")
+                        break
+                    except Exception as e:
+                        last_error = e
+                        logger.warning(f"[API错误] ak.fund_etf_spot_em 获取失败 (attempt {attempt}/2): {e}")
+                        time.sleep(min(2 ** attempt, 5))
+
+                if df is None:
+                    logger.error(f"[API错误] ak.fund_etf_spot_em 最终失败: {last_error}")
+                    df = pd.DataFrame()
                 _etf_realtime_cache['data'] = df
                 _etf_realtime_cache['timestamp'] = current_time
+
+            if df is None or df.empty:
+                logger.warning(f"[实时行情] ETF实时行情数据为空，跳过 {stock_code}")
+                return None
             
             # 查找指定 ETF
             row = df[df['代码'] == stock_code]

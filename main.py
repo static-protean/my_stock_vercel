@@ -156,6 +156,7 @@ class StockAnalysisPipeline:
         
         # 初始化搜索服务
         self.search_service = SearchService(
+            bocha_keys=self.config.bocha_api_keys,
             tavily_keys=self.config.tavily_api_keys,
             serpapi_keys=self.config.serpapi_keys,
         )
@@ -865,8 +866,9 @@ def main() -> int:
             search_service = None
             analyzer = None
             
-            if config.tavily_api_keys or config.serpapi_keys:
+            if config.bocha_api_keys or config.tavily_api_keys or config.serpapi_keys:
                 search_service = SearchService(
+                    bocha_keys=config.bocha_api_keys,
                     tavily_keys=config.tavily_api_keys,
                     serpapi_keys=config.serpapi_keys
                 )

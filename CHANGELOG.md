@@ -10,6 +10,17 @@
 ### 计划中
 - Web 管理界面
 
+## [1.5.0] - 2026-01-17
+
+### 新增
+- 📲 单股推送模式（[#55](https://github.com/ZhuLinsen/daily_stock_analysis/issues/55)）
+  - 每分析完一只股票立即推送，不用等全部分析完
+  - 命令行参数：`--single-notify`
+  - 环境变量：`SINGLE_STOCK_NOTIFY=true`
+- 🔐 自定义 Webhook Bearer Token 认证（[#51](https://github.com/ZhuLinsen/daily_stock_analysis/issues/51)）
+  - 支持需要 Token 认证的 Webhook 端点
+  - 环境变量：`CUSTOM_WEBHOOK_BEARER_TOKEN`
+
 ## [1.4.0] - 2026-01-17
 
 ### 新增

@@ -43,6 +43,7 @@ env/
 *.swp
 *.swo
 *~
+.cursorrules
 
 # 数据和日志
 data/

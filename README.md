@@ -89,11 +89,6 @@
 | `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/) Token | 可选 |
 
 
-<div align="center">
-  <img src="./sources/secret_config.png" alt="secret config" width="200" style="margin-right: 20px;">
-</div>
-
-
 **✅ 最小配置示例**
 
 如果你想快速开始，最少需要配置以下项：
@@ -104,6 +99,10 @@
 4. **搜索 API**：`TAVILY_API_KEYS`（强烈推荐，用于新闻搜索）
 
 > 💡 配置完以上 4 项即可开始使用！
+
+<div align="center">
+  <img src="./sources/secret_config.png" alt="secret config" width="200" style="margin-right: 20px;">
+</div>
 
 #### 3. 启用 Actions
 

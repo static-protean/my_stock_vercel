@@ -40,7 +40,7 @@
 
 **无需服务器，每天自动运行！**
 
-#### 1. Fork 本仓库
+#### 1. Fork 本仓库(顺便点下⭐呀)
 
 点击右上角 `Fork` 按钮
 
@@ -88,35 +88,13 @@
 | `SERPAPI_API_KEYS` | [SerpAPI](https://serpapi.com/) 备用搜索 | 可选 |
 | `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/) Token | 可选 |
 
-
-**✅ 最小配置示例**
-
-如果你想快速开始，最少需要配置以下项：
-
-1. **AI 模型**：`GEMINI_API_KEY`（推荐）或 `OPENAI_API_KEY`
-2. **通知渠道**：至少配置一个，如 `WECHAT_WEBHOOK_URL` 或 `EMAIL_SENDER` + `EMAIL_PASSWORD`
-3. **股票列表**：`STOCK_LIST`（必填）
-4. **搜索 API**：`TAVILY_API_KEYS`（强烈推荐，用于新闻搜索）
-
-> 💡 配置完以上 4 项即可开始使用！
-
-<div align="center">
-  <img src="./sources/secret_config.png" alt="secret config" width="200" style="margin-right: 20px;">
-</div>
-
 #### 3. 启用 Actions
 
-1. 进入你 Fork 的仓库
-2. 点击顶部的 `Actions` 标签
-3. 如果看到提示，点击 `I understand my workflows, go ahead and enable them`
+进入 `Actions` 标签 → 点击 `I understand my workflows, go ahead and enable them`
 
 #### 4. 手动测试
 
-1. 进入 `Actions` 标签
-2. 左侧选择 `每日股票分析` workflow
-3. 点击右侧的 `Run workflow` 按钮
-4. 选择运行模式
-5. 点击绿色的 `Run workflow` 确认
+`Actions` → `每日股票分析` → `Run workflow` → 选择模式 → `Run workflow`
 
 #### 5. 完成！
 

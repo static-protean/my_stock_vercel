@@ -5,6 +5,8 @@ AI 代码审查脚本
 """
 import os
 import subprocess
+import traceback
+
 
 
 MAX_DIFF_LENGTH = 15000
@@ -74,11 +76,16 @@ def build_prompt(diff_content, files, truncated):
 def review_with_gemini(prompt):
     """使用 Gemini API 进行审查"""
     api_key = os.environ.get('GEMINI_API_KEY')
-    model = os.environ.get('GEMINI_MODEL_FALLBACK', 'gemini-2.5-flash')
+    # 优先使用 GEMINI_MODEL_FALLBACK，如果未设置则使用硬编码的默认值
+    model = os.environ.get('GEMINI_MODEL_FALLBACK') or 'gemini-2.5-flash'
     
     if not api_key:
-        print("Gemini API Key 未配置")
+        print("❌ Gemini API Key 未配置（检查 GitHub Secrets: GEMINI_API_KEY）")
         return None
+    
+    # 打印部分 key 用于调试（只显示前8位）
+    print(f"🔑 Gemini API Key: {api_key[:8]}... (长度: {len(api_key)})")
+    print(f"🤖 使用模型: {model}")
     
     try:
         from google import genai
@@ -89,8 +96,15 @@ def review_with_gemini(prompt):
         )
         print(f"✅ Gemini ({model}) 审查成功")
         return response.text
+    except ImportError as e:
+        print(f"❌ Gemini 依赖未安装: {e}")
+        print("   请确保安装了 google-genai: pip install google-genai")
+        return None
     except Exception as e:
         print(f"❌ Gemini 审查失败: {e}")
+        # 打印更详细的错误信息
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -101,8 +115,12 @@ def review_with_openai(prompt):
     model = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
     
     if not api_key:
-        print("OpenAI API Key 未配置")
+        print("❌ OpenAI API Key 未配置（检查 GitHub Secrets: OPENAI_API_KEY）")
         return None
+    
+    print(f"🔑 OpenAI API Key: {api_key[:8]}... (长度: {len(api_key)})")
+    print(f"🌐 Base URL: {base_url}")
+    print(f"🤖 使用模型: {model}")
     
     try:
         from openai import OpenAI
@@ -115,8 +133,13 @@ def review_with_openai(prompt):
         )
         print(f"✅ OpenAI 兼容接口 ({model}) 审查成功")
         return response.choices[0].message.content
+    except ImportError as e:
+        print(f"❌ OpenAI 依赖未安装: {e}")
+        print("   请确保安装了 openai: pip install openai")
+        return None
     except Exception as e:
         print(f"❌ OpenAI 兼容接口审查失败: {e}")
+        traceback.print_exc()
         return None
 
 

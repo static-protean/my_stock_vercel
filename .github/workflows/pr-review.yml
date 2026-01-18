@@ -4,7 +4,7 @@
 name: PR Review
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
     paths:
       - '**.py'
@@ -24,12 +24,55 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
+  # ==================== 安全检查（检测敏感文件修改）====================
+  security-check:
+    name: 🔒 安全检查
+    runs-on: ubuntu-latest
+    outputs:
+      safe_to_run: ${{ steps.check_sensitive.outputs.safe_to_run }}
+    
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      
+      - name: 🔄 获取 base 分支
+        run: git fetch origin ${{ github.base_ref || 'main' }}:refs/remotes/origin/${{ github.base_ref || 'main' }}
+      
+      - name: 🔒 检查敏感文件修改
+        id: check_sensitive
+        run: |
+          BASE_REF="${{ github.base_ref || 'main' }}"
+          SENSITIVE_FILES=$(git diff --name-only origin/$BASE_REF...HEAD | grep -E '\.(github/workflows/.*\.yml|\.github/scripts/.*\.py)$' || echo "")
+          
+          if [ -n "$SENSITIVE_FILES" ]; then
+            echo "⚠️ **检测到敏感文件修改，需要人工审核！**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "修改的敏感文件：" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "$SENSITIVE_FILES" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "为了安全，自动审查已暂停。请仓库维护者人工检查这些文件后，可通过 workflow_dispatch 手动触发审查。" >> $GITHUB_STEP_SUMMARY
+            
+            echo "safe_to_run=false" >> $GITHUB_OUTPUT
+            exit 1
+          else
+            echo "✅ 未检测到敏感文件修改" >> $GITHUB_STEP_SUMMARY
+            echo "safe_to_run=true" >> $GITHUB_OUTPUT
+          fi
+
   # ==================== 静态检查（先于 AI 审查）====================
   auto-check:
     name: 🔍 静态检查
     runs-on: ubuntu-latest
+    needs: [security-check]
+    if: needs.security-check.outputs.safe_to_run == 'true'
     outputs:
       syntax_ok: ${{ steps.syntax.outputs.syntax_ok }}
       has_py_changes: ${{ steps.check_files.outputs.has_py_changes }}
@@ -38,6 +81,7 @@ jobs:
       - name: 📥 检出代码
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       
       - name: 🔄 获取 base 分支
@@ -52,7 +96,6 @@ jobs:
       - name: 📦 安装依赖
         run: |
           pip install --upgrade pip
-          pip install -r requirements.txt 2>/dev/null || true
           pip install flake8
       
       - name: 📋 检查变更文件
@@ -124,19 +167,34 @@ jobs:
   ai-review:
     name: 🤖 AI 代码审查
     runs-on: ubuntu-latest
-    needs: [auto-check]
+    needs: [security-check, auto-check]
     if: |
+      needs.security-check.outputs.safe_to_run == 'true' &&
       needs.auto-check.result == 'success' &&
       needs.auto-check.outputs.has_py_changes == 'true' &&
       vars.ENABLE_AI_REVIEW != 'false'
     
     steps:
-      - name: 📥 检出代码
+      # 先检出主分支（获取最新的 .github/scripts）
+      - name: 📥 检出主分支脚本
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+          path: main-scripts
+      
+      # 再检出 PR 代码（用于 diff 分析）
+      - name: 📥 检出 PR 代码
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          path: pr-code
       
       - name: 🔄 获取 base 分支
+        working-directory: pr-code
         run: git fetch origin ${{ github.base_ref || 'main' }}:refs/remotes/origin/${{ github.base_ref || 'main' }}
       
       - name: 🐍 设置 Python
@@ -148,22 +206,23 @@ jobs:
         run: pip install google-genai openai httpx
       
       - name: 🤖 AI 审查代码变更
+        working-directory: pr-code
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL_FALLBACK: ${{ vars.GEMINI_MODEL_FALLBACK }}
+          GEMINI_MODEL_FALLBACK: ${{ vars.GEMINI_MODEL_FALLBACK || 'gemini-2.5-flash' }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-        run: python .github/scripts/ai_review.py
+        run: python ../main-scripts/.github/scripts/ai_review.py
       
       - name: 📤 上传审查结果
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ai-review-result
-          path: ai_review_result.txt
+          path: pr-code/ai_review_result.txt
           if-no-files-found: ignore
 
   # ==================== PR 标签自动分类 ====================
@@ -249,8 +308,8 @@ jobs:
   comment:
     name: 💬 审查报告
     runs-on: ubuntu-latest
-    needs: [auto-check, ai-review]
-    if: always() && github.event_name == 'pull_request'
+    needs: [security-check, auto-check, ai-review]
+    if: always() && github.event_name == 'pull_request_target' && needs.security-check.outputs.safe_to_run == 'true'
     
     steps:
       - name: 📥 检出代码
@@ -260,6 +319,7 @@ jobs:
       
       - name: 📥 下载 AI 审查结果
         uses: actions/download-artifact@v4
+        if: needs.ai-review.result == 'success'
         continue-on-error: true
         with:
           name: ai-review-result

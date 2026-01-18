@@ -44,6 +44,7 @@
 | `EMAIL_PASSWORD` | 邮箱授权码（非登录密码） | 可选 |
 | `EMAIL_RECEIVERS` | 收件人邮箱（逗号分隔，留空发给自己） | 可选 |
 | `CUSTOM_WEBHOOK_URLS` | 自定义 Webhook（逗号分隔） | 可选 |
+| `CUSTOM_WEBHOOK_BEARER_TOKEN` | 自定义 Webhook Bearer Token | 可选 |
 | `PUSHOVER_USER_KEY` | Pushover 用户 Key | 可选 |
 | `PUSHOVER_API_TOKEN` | Pushover API Token | 可选 |
 

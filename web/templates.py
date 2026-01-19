@@ -625,11 +625,12 @@ def render_config_page(
     const POLL_INTERVAL_MS = 3000;
     const MAX_TASKS_DISPLAY = 10;
     
-    // 只允许输入数字，最多6位
+    // 允许输入数字和字母（支持港股 hkxxxxx 格式）
     codeInput.addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
-        if (this.value.length > 6) {
-            this.value = this.value.slice(0, 6);
+        // 转小写，只保留字母和数字
+        this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (this.value.length > 8) {
+            this.value = this.value.slice(0, 8);
         }
         updateButtonState();
     });
@@ -644,10 +645,12 @@ def render_config_page(
         }
     });
     
-    // 更新按钮状态
+    // 更新按钮状态 - 支持 A股(6位数字) 或 港股(hk+5位数字)
     function updateButtonState() {
-        const code = codeInput.value.trim();
-        submitBtn.disabled = code.length !== 6;
+        const code = codeInput.value.trim().toLowerCase();
+        const isAStock = /^\\d{6}$/.test(code);           // A股: 600519
+        const isHKStock = /^hk\\d{5}$/.test(code);        // 港股: hk00700
+        submitBtn.disabled = !(isAStock || isHKStock);
     }
     
     // 格式化时间
@@ -825,9 +828,11 @@ def render_config_page(
     
     // 提交分析
     window.submitAnalysis = function() {
-        const code = codeInput.value.trim();
+        const code = codeInput.value.trim().toLowerCase();
+        const isAStock = /^\d{6}$/.test(code);
+        const isHKStock = /^hk\d{5}$/.test(code);
         
-        if (code.length !== 6) {
+        if (!(isAStock || isHKStock)) {
             return;
         }
         
@@ -895,10 +900,8 @@ def render_config_page(
           <input 
               type="text" 
               id="analysis_code" 
-              placeholder="输入6位股票代码，如 600519"
+              placeholder="A股 600519 / 港股 hk00700"
               maxlength="8"
-              pattern="[0-9]*"
-              inputmode="numeric"
               autocomplete="off"
           />
           <button type="button" id="analysis_btn" class="btn-analysis" onclick="submitAnalysis()" disabled>

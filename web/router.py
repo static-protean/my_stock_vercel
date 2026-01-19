@@ -18,7 +18,7 @@ from typing import Callable, Dict, List, Optional, TYPE_CHECKING, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from web.handlers import (
-    Response, JsonResponse, HtmlResponse,
+    Response, HtmlResponse,
     get_page_handler, get_api_handler
 )
 from web.templates import render_error_page

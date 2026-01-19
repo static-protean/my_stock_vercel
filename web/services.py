@@ -176,7 +176,7 @@ class AnalysisService:
         Returns:
             任务信息字典
         """
-        task_id = f"{code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        task_id = f"{code}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
         
         # 提交到线程池
         self.executor.submit(self._run_analysis, code, task_id)

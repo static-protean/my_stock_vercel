@@ -917,6 +917,7 @@ def render_config_page(
     <form method="post" action="/update">
       <div class="form-group">
         <label for="stock_list">📋 自选股列表 <span class="code-badge">{html.escape(env_filename)}</span></label>
+        <p>仅用于本地环境 (127.0.0.1) • 安全修改 .env 配置</p>
         <textarea 
             id="stock_list" 
             name="stock_list" 

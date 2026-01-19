@@ -150,11 +150,33 @@
 
 ## 🖥️ 本地 WebUI（可选）
 
-本地运行时，可启用简易 WebUI 来方便查看/修改 `.env` 里的自选股列表。
+本地运行时，可启用 WebUI 来管理配置和触发分析。
 
-- 启动命令：`python main.py --webui`
+### 启动方式
+
+| 命令 | 说明 |
+|------|------|
+| `python main.py --webui` | 启动 WebUI + 执行一次完整分析 |
+| `python main.py --webui-only` | 仅启动 WebUI，手动触发分析 |
+
 - 访问地址：`http://127.0.0.1:8000`
 - 详细说明请参考 [配置指南 - WebUI](docs/full-guide.md#本地-webui-管理界面)
+
+### 功能特性
+
+- 📝 **配置管理** - 查看/修改 `.env` 里的自选股列表
+- 🚀 **快速分析** - 页面输入股票代码，一键触发分析
+- 📊 **实时进度** - 分析任务状态实时更新，支持多任务并行
+
+### API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/` | GET | 配置管理页面 |
+| `/health` | GET | 健康检查 |
+| `/analysis?code=xxx` | GET | 触发单只股票异步分析 |
+| `/tasks` | GET | 查询所有任务状态 |
+| `/task?id=xxx` | GET | 查询单个任务状态 |
 
 ## 📁 项目结构
 
@@ -168,11 +190,18 @@ daily_stock_analysis/
 ├── scheduler.py         # 定时任务
 ├── storage.py           # 数据存储
 ├── config.py            # 配置管理
+├── webui.py             # WebUI 入口
 ├── data_provider/       # 数据源适配器
 │   ├── akshare_fetcher.py
 │   ├── tushare_fetcher.py
 │   ├── baostock_fetcher.py
 │   └── yfinance_fetcher.py
+├── web/                 # WebUI 模块
+│   ├── server.py        # HTTP 服务器
+│   ├── router.py        # 路由管理
+│   ├── handlers.py      # 请求处理器
+│   ├── services.py      # 业务服务
+│   └── templates.py     # HTML 模板
 ├── .github/workflows/   # GitHub Actions
 ├── Dockerfile           # Docker 镜像
 └── docker-compose.yml   # Docker 编排

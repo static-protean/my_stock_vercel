@@ -22,7 +22,6 @@ import logging
 from http import HTTPStatus
 from datetime import datetime
 from typing import Dict, Any, TYPE_CHECKING
-from urllib.parse import parse_qs
 
 from web.services import get_config_service, get_analysis_service
 from web.templates import render_config_page

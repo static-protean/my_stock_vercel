@@ -5,6 +5,11 @@
 - No external dependencies
 - Only edits the STOCK_LIST key; other .env lines are preserved
 
+API Endpoints:
+  GET  /           - 配置页面
+  GET  /health     - 健康检查
+  GET  /analysis?code=xxx - 触发单只股票异步分析
+
 Usage:
   python webui.py
   WEBUI_HOST=0.0.0.0 WEBUI_PORT=8000 python webui.py
@@ -13,16 +18,119 @@ Usage:
 from __future__ import annotations
 
 import html
+import json
 import os
 import re
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlparse
 import logging
+from typing import Optional, Dict, Any
+from datetime import datetime
 
 
 logger = logging.getLogger(__name__)
+
+# 全局线程池用于异步分析任务
+_analysis_executor: Optional[ThreadPoolExecutor] = None
+_analysis_tasks: Dict[str, Dict[str, Any]] = {}  # 用于跟踪分析任务状态
+_tasks_lock = threading.Lock()
+
+
+def _get_executor() -> ThreadPoolExecutor:
+    """获取或创建全局线程池"""
+    global _analysis_executor
+    if _analysis_executor is None:
+        _analysis_executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="analysis_")
+    return _analysis_executor
+
+
+def _run_stock_analysis(code: str) -> Dict[str, Any]:
+    """
+    执行单只股票分析并推送通知
+    
+    Args:
+        code: 股票代码
+        
+    Returns:
+        分析结果字典
+    """
+    task_id = f"{code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    # 更新任务状态为进行中
+    with _tasks_lock:
+        _analysis_tasks[task_id] = {
+            "code": code,
+            "status": "running",
+            "start_time": datetime.now().isoformat(),
+            "result": None,
+            "error": None
+        }
+    
+    try:
+        # 延迟导入避免循环依赖
+        from config import get_config
+        from main import StockAnalysisPipeline
+        
+        logger.info(f"[WebUI] 开始分析股票: {code}")
+        
+        # 创建分析管道
+        config = get_config()
+        pipeline = StockAnalysisPipeline(config=config, max_workers=1)
+        
+        # 执行单只股票分析（启用单股推送）
+        result = pipeline.process_single_stock(
+            code=code,
+            skip_analysis=False,
+            single_stock_notify=True  # 自动推送通知
+        )
+        
+        if result:
+            # 分析成功
+            result_data = {
+                "code": result.code,
+                "name": result.name,
+                "sentiment_score": result.sentiment_score,
+                "operation_advice": result.operation_advice,
+                "trend_prediction": result.trend_prediction,
+                "analysis_summary": result.analysis_summary,
+            }
+            
+            with _tasks_lock:
+                _analysis_tasks[task_id].update({
+                    "status": "completed",
+                    "end_time": datetime.now().isoformat(),
+                    "result": result_data
+                })
+            
+            logger.info(f"[WebUI] 股票 {code} 分析完成: {result.operation_advice}")
+            return {"success": True, "task_id": task_id, "result": result_data}
+        else:
+            # 分析失败
+            with _tasks_lock:
+                _analysis_tasks[task_id].update({
+                    "status": "failed",
+                    "end_time": datetime.now().isoformat(),
+                    "error": "分析返回空结果"
+                })
+            
+            logger.warning(f"[WebUI] 股票 {code} 分析失败: 返回空结果")
+            return {"success": False, "task_id": task_id, "error": "分析返回空结果"}
+            
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(f"[WebUI] 股票 {code} 分析异常: {error_msg}")
+        
+        with _tasks_lock:
+            _analysis_tasks[task_id].update({
+                "status": "failed",
+                "end_time": datetime.now().isoformat(),
+                "error": error_msg
+            })
+        
+        return {"success": False, "task_id": task_id, "error": error_msg}
 
 _ENV_PATH = os.getenv("ENV_FILE", ".env")
 
@@ -297,16 +405,122 @@ def _page(current_value: str, message: str | None = None) -> bytes:
 
 class _Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
-        if self.path not in ("/", ""):
+        # 解析 URL
+        parsed = urlparse(self.path)
+        path = parsed.path
+        query = parse_qs(parsed.query)
+        
+        # 路由分发
+        if path in ("/", ""):
+            self._handle_index()
+        elif path == "/health":
+            self._handle_health()
+        elif path == "/analysis":
+            self._handle_analysis(query)
+        else:
             self.send_error(HTTPStatus.NOT_FOUND)
-            return
-
+    
+    def _handle_index(self) -> None:
+        """处理首页请求"""
         env_text = _read_env_text(_ENV_PATH)
         current = _extract_stock_list(env_text)
         payload = _page(current)
 
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+    
+    def _handle_health(self) -> None:
+        """
+        健康检查接口
+        
+        GET /health
+        
+        返回:
+            {
+                "status": "ok",
+                "timestamp": "2026-01-19T10:30:00",
+                "service": "stock-analysis-webui"
+            }
+        """
+        response = {
+            "status": "ok",
+            "timestamp": datetime.now().isoformat(),
+            "service": "stock-analysis-webui"
+        }
+        self._send_json_response(response)
+    
+    def _handle_analysis(self, query: Dict[str, list]) -> None:
+        """
+        触发单只股票异步分析
+        
+        GET /analysis?code=xxx
+        
+        参数:
+            code: 股票代码（必填）
+            
+        返回:
+            {
+                "success": true,
+                "message": "分析任务已提交",
+                "code": "600519",
+                "task_id": "600519_20260119_103000"
+            }
+        """
+        # 获取股票代码参数
+        code_list = query.get("code", [])
+        if not code_list or not code_list[0].strip():
+            self._send_json_response({
+                "success": False,
+                "error": "缺少必填参数: code (股票代码)"
+            }, status=HTTPStatus.BAD_REQUEST)
+            return
+        
+        code = code_list[0].strip()
+        
+        # 验证股票代码格式（6位数字）
+        if not re.match(r'^\d{6}$', code):
+            self._send_json_response({
+                "success": False,
+                "error": f"无效的股票代码格式: {code} (应为6位数字)"
+            }, status=HTTPStatus.BAD_REQUEST)
+            return
+        
+        # 提交异步分析任务
+        try:
+            executor = _get_executor()
+            future = executor.submit(_run_stock_analysis, code)
+            
+            task_id = f"{code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            logger.info(f"[WebUI] 已提交股票 {code} 的分析任务")
+            
+            self._send_json_response({
+                "success": True,
+                "message": "分析任务已提交，将异步执行并推送通知",
+                "code": code,
+                "task_id": task_id
+            })
+            
+        except Exception as e:
+            logger.error(f"[WebUI] 提交分析任务失败: {e}")
+            self._send_json_response({
+                "success": False,
+                "error": f"提交任务失败: {str(e)}"
+            }, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+    
+    def _send_json_response(
+        self, 
+        data: Dict[str, Any], 
+        status: HTTPStatus = HTTPStatus.OK
+    ) -> None:
+        """发送 JSON 响应"""
+        payload = json.dumps(data, ensure_ascii=False, indent=2).encode("utf-8")
+        
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)

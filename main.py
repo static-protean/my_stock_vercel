@@ -726,6 +726,12 @@ def parse_arguments() -> argparse.Namespace:
         help='启动本地配置 WebUI'
     )
     
+    parser.add_argument(
+        '--webui-only',
+        action='store_true',
+        help='仅启动 WebUI 服务，不自动执行分析（通过 /analysis API 手动触发）'
+    )
+    
     return parser.parse_args()
 
 
@@ -905,7 +911,7 @@ def main() -> int:
     
     # === 启动 WebUI (如果启用) ===
     # 优先级: 命令行参数 > 配置文件
-    start_webui = (args.webui or config.webui_enabled) and os.getenv("GITHUB_ACTIONS") != "true"
+    start_webui = (args.webui or args.webui_only or config.webui_enabled) and os.getenv("GITHUB_ACTIONS") != "true"
     
     if start_webui:
         try:
@@ -913,6 +919,19 @@ def main() -> int:
             run_server_in_thread(host=config.webui_host, port=config.webui_port)
         except Exception as e:
             logger.error(f"启动 WebUI 失败: {e}")
+    
+    # === 仅 WebUI 模式：不自动执行分析 ===
+    if args.webui_only:
+        logger.info("模式: 仅 WebUI 服务")
+        logger.info(f"WebUI 运行中: http://{config.webui_host}:{config.webui_port}")
+        logger.info("通过 /analysis?code=xxx 接口手动触发分析")
+        logger.info("按 Ctrl+C 退出...")
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("\n用户中断，程序退出")
+        return 0
 
     try:
         # 模式1: 仅大盘复盘

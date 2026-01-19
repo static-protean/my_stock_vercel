@@ -187,37 +187,82 @@ cp .env.example .env
 vim .env  # 填入 API Key 和配置
 
 # 3. 启动容器
-docker-compose up -d
+docker-compose up -d webui      # WebUI 模式（推荐）
+docker-compose up -d analyzer   # 定时任务模式
+docker-compose up -d            # 同时启动两种模式
 
-# 4. 查看日志
-docker-compose logs -f
+# 4. 访问 WebUI
+# http://localhost:8000
+
+# 5. 查看日志
+docker-compose logs -f webui
 ```
+
+### 运行模式说明
+
+| 命令 | 说明 | 端口 |
+|------|------|------|
+| `docker-compose up -d webui` | WebUI 模式，手动触发分析 | 8000 |
+| `docker-compose up -d analyzer` | 定时任务模式，每日自动执行 | - |
+| `docker-compose up -d` | 同时启动两种模式 | 8000 |
 
 ### Docker Compose 配置
 
-`docker-compose.yml` 已配置好定时任务模式：
+`docker-compose.yml` 使用 YAML 锚点复用配置：
 
 ```yaml
 version: '3.8'
+
+x-common: &common
+  build: .
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    - TZ=Asia/Shanghai
+  volumes:
+    - ./data:/app/data
+    - ./logs:/app/logs
+    - ./reports:/app/reports
+    - ./.env:/app/.env
+
 services:
-  stock-analysis:
-    build: .
-    environment:
-      - TZ=Asia/Shanghai
-    env_file:
-      - .env
-    volumes:
-      - ./data:/app/data      # 数据持久化
-      - ./logs:/app/logs      # 日志持久化
-      - ./reports:/app/reports # 报告持久化
-    restart: unless-stopped
+  # 定时任务模式
+  analyzer:
+    <<: *common
+    container_name: stock-analyzer
+
+  # WebUI 模式
+  webui:
+    <<: *common
+    container_name: stock-webui
+    command: ["python", "main.py", "--webui-only"]
+    ports:
+      - "8000:8000"
+```
+
+### 常用命令
+
+```bash
+# 查看运行状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f webui
+
+# 停止服务
+docker-compose down
+
+# 重建镜像（代码更新后）
+docker-compose build --no-cache
+docker-compose up -d webui
 ```
 
 ### 手动构建镜像
 
 ```bash
 docker build -t stock-analysis .
-docker run -d --env-file .env -v ./data:/app/data stock-analysis
+docker run -d --env-file .env -p 8000:8000 -v ./data:/app/data stock-analysis python main.py --webui-only
 ```
 
 ---
@@ -414,33 +459,73 @@ python main.py --debug
 
 ## 本地 WebUI 管理界面
 
-仅用于本地环境，方便查看和修改 `.env` 中的自选股列表。
+WebUI 提供配置管理和快速分析功能，支持页面触发单只股票分析。
 
-#### 1. 启动方式
+### 启动方式
 
-**临时启动**：
-```bash
-python main.py --webui
-```
+| 命令 | 说明 |
+|------|------|
+| `python main.py --webui` | 启动 WebUI + 执行一次完整分析 |
+| `python main.py --webui-only` | 仅启动 WebUI，手动触发分析 |
 
-**永久启用**：
-在 `.env` 中设置：
+**永久启用**：在 `.env` 中设置：
 ```env
 WEBUI_ENABLED=true
 ```
 
-#### 2. 自定义配置
-如果需要修改默认端口或允许局域网访问：
+### 功能特性
+
+- 📝 **配置管理** - 查看/修改 `.env` 里的自选股列表
+- 🚀 **快速分析** - 页面输入股票代码，一键触发分析
+- 📊 **实时进度** - 分析任务状态实时更新，支持多任务并行
+- 🔗 **API 接口** - 支持程序化调用
+
+### API 接口
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/` | GET | 配置管理页面 |
+| `/health` | GET | 健康检查 |
+| `/analysis?code=xxx` | GET | 触发单只股票异步分析 |
+| `/tasks` | GET | 查询所有任务状态 |
+| `/task?id=xxx` | GET | 查询单个任务状态 |
+
+**调用示例**：
+```bash
+# 健康检查
+curl http://127.0.0.1:8000/health
+
+# 触发分析（A股）
+curl "http://127.0.0.1:8000/analysis?code=600519"
+
+# 触发分析（港股）
+curl "http://127.0.0.1:8000/analysis?code=hk00700"
+
+# 查询任务状态
+curl "http://127.0.0.1:8000/task?id=<task_id>"
+```
+
+### 自定义配置
+
+修改默认端口或允许局域网访问：
 
 ```env
 WEBUI_HOST=0.0.0.0    # 默认 127.0.0.1
 WEBUI_PORT=8888       # 默认 8000
 ```
 
-#### 3. 访问与使用
-- 浏览器访问：`http://127.0.0.1:8000` (或您配置的端口)
-- 支持直接编辑股票代码，保存后立即生效（下次运行分析时生效）
-- **注意**：此功能在 GitHub Actions 环境中会自动禁用。
+### 支持的股票代码格式
+
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| A股 | 6位数字 | `600519`、`000001`、`300750` |
+| 港股 | hk + 5位数字 | `hk00700`、`hk09988` |
+
+### 注意事项
+
+- 浏览器访问：`http://127.0.0.1:8000`（或您配置的端口）
+- 分析完成后自动推送通知到配置的渠道
+- 此功能在 GitHub Actions 环境中会自动禁用
 
 ---
 

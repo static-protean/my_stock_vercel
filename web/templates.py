@@ -293,6 +293,242 @@ button:active {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Task List Container */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.task-list:empty::after {
+    content: '暂无任务';
+    display: block;
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    padding: 1rem;
+}
+
+/* Task Card - Compact */
+.task-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.task-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.task-card.running {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+}
+
+.task-card.completed {
+    border-color: var(--success);
+    background: linear-gradient(135deg, #ecfdf5 0%, #f8fafc 100%);
+}
+
+.task-card.failed {
+    border-color: var(--error);
+    background: linear-gradient(135deg, #fef2f2 0%, #f8fafc 100%);
+}
+
+/* Task Status Icon */
+.task-status {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.task-card.running .task-status {
+    background: var(--primary);
+    color: white;
+}
+
+.task-card.completed .task-status {
+    background: var(--success);
+    color: white;
+}
+
+.task-card.failed .task-status {
+    background: var(--error);
+    color: white;
+}
+
+.task-card.pending .task-status {
+    background: var(--border);
+    color: var(--text-light);
+}
+
+/* Task Main Info */
+.task-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.task-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.task-title .code {
+    font-family: monospace;
+    background: rgba(0,0,0,0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+}
+
+.task-title .name {
+    color: var(--text-light);
+    font-weight: 400;
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-meta {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-light);
+}
+
+.task-meta span {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+/* Task Result Badge */
+.task-result {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    flex-shrink: 0;
+}
+
+.task-advice {
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 0.25rem;
+    background: var(--primary);
+    color: white;
+}
+
+.task-advice.buy { background: #059669; }
+.task-advice.sell { background: #dc2626; }
+.task-advice.hold { background: #d97706; }
+.task-advice.wait { background: #6b7280; }
+
+.task-score {
+    font-size: 0.7rem;
+    color: var(--text-light);
+}
+
+/* Task Actions */
+.task-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.task-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--text);
+    transform: none;
+}
+
+/* Spinner in task */
+.task-card .spinner {
+    width: 12px;
+    height: 12px;
+    border-width: 1.5px;
+    margin: 0;
+}
+
+/* Empty state hint */
+.task-hint {
+    text-align: center;
+    padding: 0.75rem;
+    color: var(--text-light);
+    font-size: 0.75rem;
+    background: var(--bg);
+    border-radius: 0.375rem;
+}
+
+/* Task detail expand */
+.task-detail {
+    display: none;
+    padding: 0.5rem 0.75rem;
+    padding-left: 3rem;
+    background: rgba(0,0,0,0.02);
+    border-radius: 0 0 0.5rem 0.5rem;
+    margin-top: -0.5rem;
+    font-size: 0.75rem;
+    border: 1px solid var(--border);
+    border-top: none;
+}
+
+.task-detail.show {
+    display: block;
+}
+
+.task-detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+}
+
+.task-detail-row .label {
+    color: var(--text-light);
+}
+
+.task-detail-summary {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 0.25rem;
+    line-height: 1.4;
+}
 """
 
 
@@ -374,23 +610,27 @@ def render_config_page(
     safe_value = html.escape(stock_list)
     toast_html = render_toast(message) if message else ""
     
-    # 分析组件的 JavaScript
+    # 分析组件的 JavaScript - 支持多任务
     analysis_js = """
 <script>
 (function() {
     const codeInput = document.getElementById('analysis_code');
     const submitBtn = document.getElementById('analysis_btn');
-    const resultBox = document.getElementById('analysis_result');
+    const taskList = document.getElementById('task_list');
+    
+    // 任务管理
+    const tasks = new Map(); // taskId -> {task, pollCount}
+    let pollInterval = null;
+    const MAX_POLL_COUNT = 100;
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_TASKS_DISPLAY = 10;
     
     // 只允许输入数字，最多6位
     codeInput.addEventListener('input', function(e) {
-        // 移除非数字字符
         this.value = this.value.replace(/[^0-9]/g, '');
-        // 限制长度为6
         if (this.value.length > 6) {
             this.value = this.value.slice(0, 6);
         }
-        // 更新按钮状态
         updateButtonState();
     });
     
@@ -410,15 +650,177 @@ def render_config_page(
         submitBtn.disabled = code.length !== 6;
     }
     
-    // 显示结果
-    function showResult(message, type) {
-        resultBox.className = 'result-box show ' + type;
-        resultBox.innerHTML = message;
+    // 格式化时间
+    function formatTime(isoString) {
+        if (!isoString) return '-';
+        const date = new Date(isoString);
+        return date.toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
     }
     
-    // 隐藏结果
-    function hideResult() {
-        resultBox.className = 'result-box';
+    // 计算耗时
+    function calcDuration(start, end) {
+        if (!start) return '-';
+        const startTime = new Date(start).getTime();
+        const endTime = end ? new Date(end).getTime() : Date.now();
+        const seconds = Math.floor((endTime - startTime) / 1000);
+        if (seconds < 60) return seconds + 's';
+        const minutes = Math.floor(seconds / 60);
+        const remainSec = seconds % 60;
+        return minutes + 'm' + remainSec + 's';
+    }
+    
+    // 获取建议样式类
+    function getAdviceClass(advice) {
+        if (!advice) return '';
+        if (advice.includes('买') || advice.includes('加仓')) return 'buy';
+        if (advice.includes('卖') || advice.includes('减仓')) return 'sell';
+        if (advice.includes('持有')) return 'hold';
+        return 'wait';
+    }
+    
+    // 渲染单个任务卡片
+    function renderTaskCard(taskId, taskData) {
+        const task = taskData.task || {};
+        const status = task.status || 'pending';
+        const code = task.code || taskId.split('_')[0];
+        const result = task.result || {};
+        
+        let statusIcon = '⏳';
+        let statusText = '等待中';
+        if (status === 'running') { statusIcon = '<span class="spinner"></span>'; statusText = '分析中'; }
+        else if (status === 'completed') { statusIcon = '✓'; statusText = '完成'; }
+        else if (status === 'failed') { statusIcon = '✗'; statusText = '失败'; }
+        
+        let resultHtml = '';
+        if (status === 'completed' && result.operation_advice) {
+            const adviceClass = getAdviceClass(result.operation_advice);
+            resultHtml = '<div class="task-result">' +
+                '<span class="task-advice ' + adviceClass + '">' + result.operation_advice + '</span>' +
+                '<span class="task-score">' + (result.sentiment_score || '-') + '分</span>' +
+                '</div>';
+        } else if (status === 'failed') {
+            resultHtml = '<div class="task-result"><span class="task-advice sell">失败</span></div>';
+        }
+        
+        let detailHtml = '';
+        if (status === 'completed' && result.name) {
+            detailHtml = '<div class="task-detail" id="detail_' + taskId + '">' +
+                '<div class="task-detail-row"><span class="label">趋势</span><span>' + (result.trend_prediction || '-') + '</span></div>' +
+                (result.analysis_summary ? '<div class="task-detail-summary">' + result.analysis_summary.substring(0, 100) + '...</div>' : '') +
+                '</div>';
+        }
+        
+        return '<div class="task-card ' + status + '" id="task_' + taskId + '" onclick="toggleDetail(\\''+taskId+'\\')">' +
+            '<div class="task-status">' + statusIcon + '</div>' +
+            '<div class="task-main">' +
+                '<div class="task-title">' +
+                    '<span class="code">' + code + '</span>' +
+                    (result.name ? '<span class="name">' + result.name + '</span>' : '') +
+                '</div>' +
+                '<div class="task-meta">' +
+                    '<span>⏱ ' + formatTime(task.start_time) + '</span>' +
+                    '<span>⏳ ' + calcDuration(task.start_time, task.end_time) + '</span>' +
+                '</div>' +
+            '</div>' +
+            resultHtml +
+            '<div class="task-actions">' +
+                '<button class="task-btn" onclick="event.stopPropagation();removeTask(\\''+taskId+'\\')">×</button>' +
+            '</div>' +
+        '</div>' + detailHtml;
+    }
+    
+    // 渲染所有任务
+    function renderAllTasks() {
+        if (tasks.size === 0) {
+            taskList.innerHTML = '<div class="task-hint">💡 输入股票代码开始分析</div>';
+            return;
+        }
+        
+        let html = '';
+        const sortedTasks = Array.from(tasks.entries())
+            .sort((a, b) => (b[1].task?.start_time || '').localeCompare(a[1].task?.start_time || ''));
+        
+        sortedTasks.slice(0, MAX_TASKS_DISPLAY).forEach(([taskId, taskData]) => {
+            html += renderTaskCard(taskId, taskData);
+        });
+        
+        if (sortedTasks.length > MAX_TASKS_DISPLAY) {
+            html += '<div class="task-hint">... 还有 ' + (sortedTasks.length - MAX_TASKS_DISPLAY) + ' 个任务</div>';
+        }
+        
+        taskList.innerHTML = html;
+    }
+    
+    // 切换详情显示
+    window.toggleDetail = function(taskId) {
+        const detail = document.getElementById('detail_' + taskId);
+        if (detail) {
+            detail.classList.toggle('show');
+        }
+    };
+    
+    // 移除任务
+    window.removeTask = function(taskId) {
+        tasks.delete(taskId);
+        renderAllTasks();
+        checkStopPolling();
+    };
+    
+    // 轮询所有运行中的任务
+    function pollAllTasks() {
+        let hasRunning = false;
+        
+        tasks.forEach((taskData, taskId) => {
+            const status = taskData.task?.status;
+            if (status === 'running' || status === 'pending' || !status) {
+                hasRunning = true;
+                taskData.pollCount = (taskData.pollCount || 0) + 1;
+                
+                if (taskData.pollCount > MAX_POLL_COUNT) {
+                    taskData.task = taskData.task || {};
+                    taskData.task.status = 'failed';
+                    taskData.task.error = '轮询超时';
+                    return;
+                }
+                
+                fetch('/task?id=' + encodeURIComponent(taskId))
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success && data.task) {
+                            taskData.task = data.task;
+                            renderAllTasks();
+                        }
+                    })
+                    .catch(() => {});
+            }
+        });
+        
+        if (!hasRunning) {
+            checkStopPolling();
+        }
+    }
+    
+    // 检查是否需要停止轮询
+    function checkStopPolling() {
+        let hasRunning = false;
+        tasks.forEach((taskData) => {
+            const status = taskData.task?.status;
+            if (status === 'running' || status === 'pending' || !status) {
+                hasRunning = true;
+            }
+        });
+        
+        if (!hasRunning && pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+    
+    // 开始轮询
+    function startPolling() {
+        if (!pollInterval) {
+            pollInterval = setInterval(pollAllTasks, POLL_INTERVAL_MS);
+        }
     }
     
     // 提交分析
@@ -426,78 +828,87 @@ def render_config_page(
         const code = codeInput.value.trim();
         
         if (code.length !== 6) {
-            showResult('❌ 请输入6位股票代码', 'error');
             return;
         }
         
-        // 禁用按钮，显示加载状态
         submitBtn.disabled = true;
-        submitBtn.textContent = '分析中...';
-        showResult('<span class="spinner"></span>正在提交分析任务，请稍候...', 'loading');
+        submitBtn.textContent = '提交中...';
         
-        // 调用 API
         fetch('/analysis?code=' + encodeURIComponent(code))
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showResult(
-                        '✅ <strong>任务已提交</strong><br>' +
-                        '股票代码: ' + data.code + '<br>' +
-                        '任务ID: <code>' + data.task_id + '</code><br>' +
-                        '<span class="text-muted">分析完成后将自动推送通知</span>',
-                        'success'
-                    );
+                    const taskId = data.task_id;
+                    tasks.set(taskId, {
+                        task: {
+                            code: code,
+                            status: 'running',
+                            start_time: new Date().toISOString()
+                        },
+                        pollCount: 0
+                    });
+                    
+                    renderAllTasks();
+                    startPolling();
+                    codeInput.value = '';
+                    
+                    // 立即轮询一次
+                    setTimeout(() => {
+                        fetch('/task?id=' + encodeURIComponent(taskId))
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.success && d.task) {
+                                    tasks.get(taskId).task = d.task;
+                                    renderAllTasks();
+                                }
+                            });
+                    }, 500);
                 } else {
-                    showResult('❌ ' + (data.error || '提交失败'), 'error');
+                    alert('提交失败: ' + (data.error || '未知错误'));
                 }
             })
             .catch(error => {
-                showResult('❌ 请求失败: ' + error.message, 'error');
+                alert('请求失败: ' + error.message);
             })
             .finally(() => {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '🚀 开始分析';
+                submitBtn.textContent = '🚀 分析';
                 updateButtonState();
             });
     };
     
-    // 初始化按钮状态
+    // 初始化
     updateButtonState();
+    renderAllTasks();
 })();
 </script>
 """
     
     content = f"""
   <div class="container">
-    <h2>📈 A/H股分析配置</h2>
-    <div class="subtitle">
-        本地配置文件管理 <span class="code-badge">{html.escape(env_filename)}</span>
-    </div>
+    <h2>📈 A/H股分析</h2>
     
     <!-- 快速分析区域 -->
-    <div class="analysis-section">
-      <h3>🔍 快速分析单只股票</h3>
-      <div class="form-group">
-        <label for="analysis_code">输入股票代码</label>
+    <div class="analysis-section" style="margin-top: 0; padding-top: 0; border-top: none;">
+      <div class="form-group" style="margin-bottom: 0.75rem;">
         <div class="input-group">
           <input 
               type="text" 
               id="analysis_code" 
-              placeholder="例如: 600519"
-              maxlength="6"
+              placeholder="输入6位股票代码，如 600519"
+              maxlength="8"
               pattern="[0-9]*"
               inputmode="numeric"
               autocomplete="off"
           />
           <button type="button" id="analysis_btn" class="btn-analysis" onclick="submitAnalysis()" disabled>
-            🚀 开始分析
+            🚀 分析
           </button>
         </div>
-        <div class="text-muted">
-            * 请输入6位股票代码，仅支持单只股票分析，分析完成后自动推送通知
-        </div>
       </div>
-      <div id="analysis_result" class="result-box"></div>
+      
+      <!-- 任务列表 -->
+      <div id="task_list" class="task-list"></div>
     </div>
     
     <hr class="section-divider">
@@ -505,25 +916,19 @@ def render_config_page(
     <!-- 自选股配置区域 -->
     <form method="post" action="/update">
       <div class="form-group">
-        <label for="stock_list">📋 自选股代码列表</label>
+        <label for="stock_list">📋 自选股列表 <span class="code-badge">{html.escape(env_filename)}</span></label>
         <textarea 
             id="stock_list" 
             name="stock_list" 
-            rows="6" 
-            placeholder="例如: 600519, 000001 (支持逗号、换行分隔)"
+            rows="4" 
+            placeholder="例如: 600519, 000001 (逗号或换行分隔)"
         >{safe_value}</textarea>
-        <div class="text-muted">
-            * 支持输入多个股票代码，用英文逗号或换行分隔
-        </div>
       </div>
-      <button type="submit">💾 保存配置</button>
+      <button type="submit">💾 保存</button>
     </form>
     
     <div class="footer">
-      <p>仅用于本地环境 (127.0.0.1) • 安全修改 .env 配置</p>
-      <p class="mt-2">
-        API: <code>/health</code> · <code>/analysis?code=xxx</code> · <code>/tasks</code>
-      </p>
+      <p>API: <code>/health</code> · <code>/analysis?code=xxx</code> · <code>/tasks</code></p>
     </div>
   </div>
   

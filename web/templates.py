@@ -621,7 +621,7 @@ def render_config_page(
     // 任务管理
     const tasks = new Map(); // taskId -> {task, pollCount}
     let pollInterval = null;
-    const MAX_POLL_COUNT = 100;
+    const MAX_POLL_COUNT = 120; // 6 分钟超时：120 * 3000ms = 360000ms
     const POLL_INTERVAL_MS = 3000;
     const MAX_TASKS_DISPLAY = 10;
     

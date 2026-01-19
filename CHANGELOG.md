@@ -10,6 +10,26 @@
 ### 计划中
 - Web 管理界面
 
+## [1.6.0] - 2026-01-19
+
+### 新增
+- 🖥️ WebUI 管理界面及 API 支持（PR #72）
+  - 全新 Web 架构：分层设计（Server/Router/Handler/Service）
+  - 核心 API：支持 `/analysis` (触发分析), `/tasks` (查询进度), `/health` (健康检查)
+  - 交互界面：支持页面直接输入代码并触发分析，实时展示进度
+  - 运行模式：新增 `--webui-only` 模式，仅启动 Web 服务
+  - 解决了 [#70](https://github.com/ZhuLinsen/daily_stock_analysis/issues/70) 的核心需求（提供触发分析的接口）
+- ⚙️ GitHub Actions 配置灵活性增强（[#79](https://github.com/ZhuLinsen/daily_stock_analysis/issues/79)）
+  - 支持从 Repository Variables 读取非敏感配置（如 STOCK_LIST, GEMINI_MODEL）
+  - 保持对 Secrets 的向下兼容
+
+### 修复
+- 🐛 修复企业微信/飞书报告截断问题（[#73](https://github.com/ZhuLinsen/daily_stock_analysis/issues/73)）
+  - 移除 notification.py 中不必要的长度硬截断逻辑
+  - 依赖底层自动分片机制处理长消息
+- 🐛 修复 GitHub Workflow 环境变量缺失（[#80](https://github.com/ZhuLinsen/daily_stock_analysis/issues/80)）
+  - 修复 `CUSTOM_WEBHOOK_BEARER_TOKEN` 未正确传递到 Runner 的问题
+
 ## [1.5.0] - 2026-01-17
 
 ### 新增

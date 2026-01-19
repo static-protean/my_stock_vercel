@@ -195,6 +195,104 @@ button:active {
 .mt-4 { margin-top: 1rem; }
 .mb-2 { margin-bottom: 0.5rem; }
 .mb-4 { margin-bottom: 1rem; }
+
+/* Section divider */
+.section-divider {
+    margin: 2rem 0;
+    border: none;
+    border-top: 1px solid var(--border);
+}
+
+/* Analysis section */
+.analysis-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.analysis-section h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text);
+}
+
+.input-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.input-group input {
+    flex: 1;
+    resize: none;
+}
+
+.input-group button {
+    width: auto;
+    padding: 0.75rem 1.25rem;
+    white-space: nowrap;
+}
+
+.btn-analysis {
+    background-color: var(--success);
+}
+
+.btn-analysis:hover {
+    background-color: #059669;
+}
+
+.btn-analysis:disabled {
+    background-color: var(--text-light);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Result box */
+.result-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    display: none;
+}
+
+.result-box.show {
+    display: block;
+}
+
+.result-box.success {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+}
+
+.result-box.error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.result-box.loading {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
 """
 
 
@@ -276,6 +374,99 @@ def render_config_page(
     safe_value = html.escape(stock_list)
     toast_html = render_toast(message) if message else ""
     
+    # 分析组件的 JavaScript
+    analysis_js = """
+<script>
+(function() {
+    const codeInput = document.getElementById('analysis_code');
+    const submitBtn = document.getElementById('analysis_btn');
+    const resultBox = document.getElementById('analysis_result');
+    
+    // 只允许输入数字，最多6位
+    codeInput.addEventListener('input', function(e) {
+        // 移除非数字字符
+        this.value = this.value.replace(/[^0-9]/g, '');
+        // 限制长度为6
+        if (this.value.length > 6) {
+            this.value = this.value.slice(0, 6);
+        }
+        // 更新按钮状态
+        updateButtonState();
+    });
+    
+    // 回车提交
+    codeInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (!submitBtn.disabled) {
+                submitAnalysis();
+            }
+        }
+    });
+    
+    // 更新按钮状态
+    function updateButtonState() {
+        const code = codeInput.value.trim();
+        submitBtn.disabled = code.length !== 6;
+    }
+    
+    // 显示结果
+    function showResult(message, type) {
+        resultBox.className = 'result-box show ' + type;
+        resultBox.innerHTML = message;
+    }
+    
+    // 隐藏结果
+    function hideResult() {
+        resultBox.className = 'result-box';
+    }
+    
+    // 提交分析
+    window.submitAnalysis = function() {
+        const code = codeInput.value.trim();
+        
+        if (code.length !== 6) {
+            showResult('❌ 请输入6位股票代码', 'error');
+            return;
+        }
+        
+        // 禁用按钮，显示加载状态
+        submitBtn.disabled = true;
+        submitBtn.textContent = '分析中...';
+        showResult('<span class="spinner"></span>正在提交分析任务，请稍候...', 'loading');
+        
+        // 调用 API
+        fetch('/analysis?code=' + encodeURIComponent(code))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showResult(
+                        '✅ <strong>任务已提交</strong><br>' +
+                        '股票代码: ' + data.code + '<br>' +
+                        '任务ID: <code>' + data.task_id + '</code><br>' +
+                        '<span class="text-muted">分析完成后将自动推送通知</span>',
+                        'success'
+                    );
+                } else {
+                    showResult('❌ ' + (data.error || '提交失败'), 'error');
+                }
+            })
+            .catch(error => {
+                showResult('❌ 请求失败: ' + error.message, 'error');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 开始分析';
+                updateButtonState();
+            });
+    };
+    
+    // 初始化按钮状态
+    updateButtonState();
+})();
+</script>
+"""
+    
     content = f"""
   <div class="container">
     <h2>📈 A/H股分析配置</h2>
@@ -283,9 +474,38 @@ def render_config_page(
         本地配置文件管理 <span class="code-badge">{html.escape(env_filename)}</span>
     </div>
     
+    <!-- 快速分析区域 -->
+    <div class="analysis-section">
+      <h3>🔍 快速分析单只股票</h3>
+      <div class="form-group">
+        <label for="analysis_code">输入股票代码</label>
+        <div class="input-group">
+          <input 
+              type="text" 
+              id="analysis_code" 
+              placeholder="例如: 600519"
+              maxlength="6"
+              pattern="[0-9]*"
+              inputmode="numeric"
+              autocomplete="off"
+          />
+          <button type="button" id="analysis_btn" class="btn-analysis" onclick="submitAnalysis()" disabled>
+            🚀 开始分析
+          </button>
+        </div>
+        <div class="text-muted">
+            * 请输入6位股票代码，仅支持单只股票分析，分析完成后自动推送通知
+        </div>
+      </div>
+      <div id="analysis_result" class="result-box"></div>
+    </div>
+    
+    <hr class="section-divider">
+    
+    <!-- 自选股配置区域 -->
     <form method="post" action="/update">
       <div class="form-group">
-        <label for="stock_list">自选股代码列表</label>
+        <label for="stock_list">📋 自选股代码列表</label>
         <textarea 
             id="stock_list" 
             name="stock_list" 
@@ -293,7 +513,7 @@ def render_config_page(
             placeholder="例如: 600519, 000001 (支持逗号、换行分隔)"
         >{safe_value}</textarea>
         <div class="text-muted">
-            * 支持输入股票代码，多个代码请用英文逗号或换行分隔
+            * 支持输入多个股票代码，用英文逗号或换行分隔
         </div>
       </div>
       <button type="submit">💾 保存配置</button>
@@ -302,12 +522,13 @@ def render_config_page(
     <div class="footer">
       <p>仅用于本地环境 (127.0.0.1) • 安全修改 .env 配置</p>
       <p class="mt-2">
-        API: <code>/health</code> · <code>/analysis?code=xxx</code>
+        API: <code>/health</code> · <code>/analysis?code=xxx</code> · <code>/tasks</code>
       </p>
     </div>
   </div>
   
   {toast_html}
+  {analysis_js}
 """
     
     page = render_base(

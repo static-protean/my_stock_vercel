@@ -835,11 +835,6 @@ class NotificationService:
         
         content = "\n".join(lines)
         
-        # 检查长度
-        if len(content) > 3800:
-            logger.warning(f"仪表盘超长({len(content)}字符)，截断")
-            content = content[:3800] + "\n...(已截断)"
-        
         return content
     
     def generate_wechat_summary(self, results: List[AnalysisResult]) -> str:
@@ -903,11 +898,6 @@ class NotificationService:
         ])
         
         content = "\n".join(lines)
-        
-        # 最终检查长度
-        if len(content) > 3800:
-            logger.warning(f"精简报告仍超长({len(content)}字符)，进行截断")
-            content = content[:3800] + "\n\n...(内容过长已截断)"
         
         return content
     

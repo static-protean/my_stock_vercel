@@ -30,6 +30,7 @@ import requests
 
 from config import get_config
 from analyzer import AnalysisResult
+from bot.models import BotMessage
 
 logger = logging.getLogger(__name__)
 
@@ -111,13 +112,15 @@ class NotificationService:
     注意：所有已配置的渠道都会收到推送
     """
     
-    def __init__(self):
+    def __init__(self, source_message: Optional[BotMessage] = None):
         """
         初始化通知服务
         
         检测所有已配置的渠道，推送时会向所有渠道发送
         """
         config = get_config()
+        self._source_message = source_message
+        self._context_channels: List[str] = []
         
         # 各渠道的 Webhook URL
         self._wechat_url = config.wechat_webhook_url
@@ -152,12 +155,15 @@ class NotificationService:
         
         # 检测所有已配置的渠道
         self._available_channels = self._detect_all_channels()
+        if self._has_context_channel():
+            self._context_channels.append("钉钉会话")
         
-        if not self._available_channels:
+        if not self._available_channels and not self._context_channels:
             logger.warning("未配置有效的通知渠道，将不发送推送通知")
         else:
             channel_names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
-            logger.info(f"已配置 {len(self._available_channels)} 个通知渠道：{', '.join(channel_names)}")
+            channel_names.extend(self._context_channels)
+            logger.info(f"已配置 {len(channel_names)} 个通知渠道：{', '.join(channel_names)}")
     
     def _detect_all_channels(self) -> List[NotificationChannel]:
         """
@@ -207,8 +213,8 @@ class NotificationService:
         return bool(self._pushover_config['user_key'] and self._pushover_config['api_token'])
     
     def is_available(self) -> bool:
-        """检查通知服务是否可用（至少有一个渠道）"""
-        return len(self._available_channels) > 0
+        """检查通知服务是否可用（至少有一个渠道或上下文渠道）"""
+        return len(self._available_channels) > 0 or self._has_context_channel()
     
     def get_available_channels(self) -> List[NotificationChannel]:
         """获取所有已配置的渠道"""
@@ -216,7 +222,40 @@ class NotificationService:
     
     def get_channel_names(self) -> str:
         """获取所有已配置渠道的名称"""
-        return ', '.join([ChannelDetector.get_channel_name(ch) for ch in self._available_channels])
+        names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
+        if self._has_context_channel():
+            names.append("钉钉会话")
+        return ', '.join(names)
+
+    def _has_context_channel(self) -> bool:
+        """判断是否存在基于消息上下文的临时渠道（如钉钉会话）"""
+        return self._extract_dingtalk_session_webhook() is not None
+
+    def _extract_dingtalk_session_webhook(self) -> Optional[str]:
+        """从来源消息中提取钉钉会话 Webhook（用于 Stream 模式回复）"""
+        if not isinstance(self._source_message, BotMessage):
+            return None
+        raw_data = getattr(self._source_message, "raw_data", {}) or {}
+        if not isinstance(raw_data, dict):
+            return None
+        session_webhook = (
+            raw_data.get("_session_webhook")
+            or raw_data.get("sessionWebhook")
+            or raw_data.get("session_webhook")
+            or raw_data.get("session_webhook_url")
+        )
+        if not session_webhook and isinstance(raw_data.get("headers"), dict):
+            session_webhook = raw_data["headers"].get("sessionWebhook")
+        return session_webhook
+
+    def send_to_context(self, content: str) -> bool:
+        """
+        向基于消息上下文的渠道发送消息（例如钉钉 Stream 会话）
+        
+        Args:
+            content: Markdown 格式内容
+        """
+        return self._send_via_source_context(content)
     
     def generate_daily_report(
         self, 
@@ -2301,6 +2340,26 @@ class NotificationService:
             "message": content,
             "body": content
         }
+
+    def _send_via_source_context(self, content: str) -> bool:
+        """
+        使用消息上下文（如钉钉会话 webhook）发送一份报告
+        
+        主要用于从钉钉 Stream 触发的任务，确保结果能回到触发的会话。
+        """
+        session_webhook = self._extract_dingtalk_session_webhook()
+        if not session_webhook:
+            return False
+
+        try:
+            if self._send_dingtalk_chunked(session_webhook, content, max_bytes=20000):
+                logger.info("已通过钉钉会话（Stream）推送报告")
+                return True
+            logger.error("钉钉会话（Stream）推送失败")
+            return False
+        except Exception as e:
+            logger.error(f"钉钉会话（Stream）推送异常: {e}")
+            return False
     
     def send(self, content: str) -> bool:
         """
@@ -2314,7 +2373,12 @@ class NotificationService:
         Returns:
             是否至少有一个渠道发送成功
         """
-        if not self.is_available():
+        context_success = self.send_to_context(content)
+
+        if not self._available_channels:
+            if context_success:
+                logger.info("已通过消息上下文渠道完成推送（无其他通知渠道）")
+                return True
             logger.warning("通知服务不可用，跳过推送")
             return False
         
@@ -2353,7 +2417,7 @@ class NotificationService:
                 fail_count += 1
         
         logger.info(f"通知发送完成：成功 {success_count} 个，失败 {fail_count} 个")
-        return success_count > 0
+        return success_count > 0 or context_success
     
     def _send_chunked_messages(self, content: str, max_length: int) -> bool:
         """

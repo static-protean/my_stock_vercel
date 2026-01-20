@@ -65,6 +65,27 @@ __all__ = [
 ]
 
 
+def _start_bot_stream_clients() -> None:
+    """启动 Bot Stream 模式客户端（如果已配置）"""
+    from config import get_config
+    config = get_config()
+    
+    # 钉钉 Stream 模式
+    if config.dingtalk_stream_enabled:
+        try:
+            from bot.platforms import start_dingtalk_stream_background, DINGTALK_STREAM_AVAILABLE
+            if DINGTALK_STREAM_AVAILABLE:
+                if start_dingtalk_stream_background():
+                    logger.info("[WebUI] 钉钉 Stream 客户端已在后台启动")
+                else:
+                    logger.warning("[WebUI] 钉钉 Stream 客户端启动失败")
+            else:
+                logger.warning("[WebUI] 钉钉 Stream 模式已启用但 SDK 未安装")
+                logger.warning("[WebUI] 请运行: pip install dingtalk-stream")
+        except Exception as e:
+            logger.error(f"[WebUI] 启动钉钉 Stream 客户端失败: {e}")
+
+
 def main() -> int:
     """
     主入口函数
@@ -85,6 +106,15 @@ def main() -> int:
     print("  GET  /task?id=xxx   - 任务状态")
     print("  POST /update        - 更新配置")
     print()
+    print("Bot Webhooks:")
+    print("  POST /bot/feishu    - 飞书机器人")
+    print("  POST /bot/dingtalk  - 钉钉机器人")
+    print("  POST /bot/wecom     - 企业微信机器人")
+    print("  POST /bot/telegram  - Telegram 机器人")
+    print()
+    
+    # 启动 Bot Stream 客户端（如果配置了）
+    _start_bot_stream_clients()
     
     try:
         run_server(host=host, port=port)

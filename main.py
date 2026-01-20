@@ -889,6 +889,25 @@ def run_full_analysis(
         logger.exception(f"分析流程执行失败: {e}")
 
 
+def start_bot_stream_clients(config: Config) -> None:
+    """Start bot stream clients when enabled in config."""
+    if not config.dingtalk_stream_enabled:
+        return
+
+    try:
+        from bot.platforms import start_dingtalk_stream_background, DINGTALK_STREAM_AVAILABLE
+        if DINGTALK_STREAM_AVAILABLE:
+            if start_dingtalk_stream_background():
+                logger.info("[Main] Dingtalk Stream client started in background.")
+            else:
+                logger.warning("[Main] Dingtalk Stream client failed to start.")
+        else:
+            logger.warning("[Main] Dingtalk Stream enabled but SDK is missing.")
+            logger.warning("[Main] Run: pip install dingtalk-stream")
+    except Exception as exc:
+        logger.error(f"[Main] Failed to start Dingtalk Stream client: {exc}")
+
+
 def main() -> int:
     """
     主入口函数
@@ -929,6 +948,7 @@ def main() -> int:
         try:
             from webui import run_server_in_thread
             run_server_in_thread(host=config.webui_host, port=config.webui_port)
+            start_bot_stream_clients(config)
         except Exception as e:
             logger.error(f"启动 WebUI 失败: {e}")
     

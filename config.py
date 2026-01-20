@@ -126,6 +126,31 @@ class Config:
     webui_host: str = "127.0.0.1"
     webui_port: int = 8000
     
+    # === 机器人配置 ===
+    bot_enabled: bool = True              # 是否启用机器人功能
+    bot_command_prefix: str = "/"         # 命令前缀
+    bot_rate_limit_requests: int = 10     # 频率限制：窗口内最大请求数
+    bot_rate_limit_window: int = 60       # 频率限制：窗口时间（秒）
+    bot_admin_users: List[str] = field(default_factory=list)  # 管理员用户 ID 列表
+    
+    # 飞书机器人（事件订阅）- 已有 feishu_app_id, feishu_app_secret
+    feishu_verification_token: Optional[str] = None  # 事件订阅验证 Token
+    feishu_encrypt_key: Optional[str] = None         # 消息加密密钥（可选）
+    
+    # 钉钉机器人
+    dingtalk_app_key: Optional[str] = None      # 应用 AppKey
+    dingtalk_app_secret: Optional[str] = None   # 应用 AppSecret
+    dingtalk_stream_enabled: bool = False       # 是否启用 Stream 模式（无需公网IP）
+    
+    # 企业微信机器人（回调模式）
+    wecom_corpid: Optional[str] = None              # 企业 ID
+    wecom_token: Optional[str] = None               # 回调 Token
+    wecom_encoding_aes_key: Optional[str] = None    # 消息加解密密钥
+    wecom_agent_id: Optional[str] = None            # 应用 AgentId
+    
+    # Telegram 机器人 - 已有 telegram_bot_token, telegram_chat_id
+    telegram_webhook_secret: Optional[str] = None   # Webhook 密钥
+    
     # 单例实例存储
     _instance: Optional['Config'] = None
     
@@ -222,6 +247,26 @@ class Config:
             webui_enabled=os.getenv('WEBUI_ENABLED', 'false').lower() == 'true',
             webui_host=os.getenv('WEBUI_HOST', '127.0.0.1'),
             webui_port=int(os.getenv('WEBUI_PORT', '8000')),
+            # 机器人配置
+            bot_enabled=os.getenv('BOT_ENABLED', 'true').lower() == 'true',
+            bot_command_prefix=os.getenv('BOT_COMMAND_PREFIX', '/'),
+            bot_rate_limit_requests=int(os.getenv('BOT_RATE_LIMIT_REQUESTS', '10')),
+            bot_rate_limit_window=int(os.getenv('BOT_RATE_LIMIT_WINDOW', '60')),
+            bot_admin_users=[u.strip() for u in os.getenv('BOT_ADMIN_USERS', '').split(',') if u.strip()],
+            # 飞书机器人
+            feishu_verification_token=os.getenv('FEISHU_VERIFICATION_TOKEN'),
+            feishu_encrypt_key=os.getenv('FEISHU_ENCRYPT_KEY'),
+            # 钉钉机器人
+            dingtalk_app_key=os.getenv('DINGTALK_APP_KEY'),
+            dingtalk_app_secret=os.getenv('DINGTALK_APP_SECRET'),
+            dingtalk_stream_enabled=os.getenv('DINGTALK_STREAM_ENABLED', 'false').lower() == 'true',
+            # 企业微信机器人
+            wecom_corpid=os.getenv('WECOM_CORPID'),
+            wecom_token=os.getenv('WECOM_TOKEN'),
+            wecom_encoding_aes_key=os.getenv('WECOM_ENCODING_AES_KEY'),
+            wecom_agent_id=os.getenv('WECOM_AGENT_ID'),
+            # Telegram
+            telegram_webhook_secret=os.getenv('TELEGRAM_WEBHOOK_SECRET'),
         )
     
     @classmethod

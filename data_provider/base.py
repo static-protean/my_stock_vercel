@@ -290,17 +290,33 @@ class DataFetcherManager:
             # 配置了 Tushare Token 且 API 初始化成功，提升为最高优先级
             tushare.priority = 0
             logger.info("✅ 检测到 TUSHARE_TOKEN 且 API 初始化成功，Tushare 数据源优先级提升为最高 (Priority 0)")
+            # 将 Tushare 放在列表最前面，确保同优先级时优先使用
+            self._fetchers = [
+                tushare,
+                efinance,
+                akshare,
+                baostock,
+                yfinance,
+            ]
         elif config.tushare_token:
             # Token 配置了但 API 初始化失败
             logger.warning("⚠️ TUSHARE_TOKEN 已配置但 API 初始化失败，Tushare 保持默认优先级 (Priority 2)")
-
-        self._fetchers = [
-            efinance,
-            akshare,
-            tushare,
-            baostock,
-            yfinance,
-        ]
+            self._fetchers = [
+                efinance,
+                akshare,
+                tushare,
+                baostock,
+                yfinance,
+            ]
+        else:
+            # 未配置 Token，使用默认顺序
+            self._fetchers = [
+                efinance,
+                akshare,
+                tushare,
+                baostock,
+                yfinance,
+            ]
 
         # 按优先级排序
         self._fetchers.sort(key=lambda f: f.priority)

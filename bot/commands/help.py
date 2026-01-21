@@ -98,7 +98,8 @@ class HelpCommand(BotCommand):
             f"• {prefix}analyze 301023 - 奕帆传动",
             "",
             f"• {prefix}market - 查看大盘复盘",
-            # f'• {prefix}batch - 批量分析自选股',
+            "",
+            f"• {prefix}batch - 批量分析自选股",
         ])
         
         return "\n".join(lines)

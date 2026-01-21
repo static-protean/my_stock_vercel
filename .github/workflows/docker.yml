@@ -1,4 +1,4 @@
-name: Build Multi-Arch Docker Image
+name: Build Multi-Arch Docker Image #停用 #未完善dockerhub推送  #用ghcr.yml
  
 on:
   workflow_dispatch:

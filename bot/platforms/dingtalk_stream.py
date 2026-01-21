@@ -75,6 +75,40 @@ class DingtalkStreamHandler:
             getattr(message.chat_type, "value", message.chat_type),
             summary,
         )
+
+    @staticmethod
+    def _append_at_trigger_user(text: str, incoming_message: Any) -> str:
+        """
+        Stream 模式下回复消息时，在正文末尾追加 @触发用户。
+
+        说明：
+        - 钉钉机器人 webhook/stream 的 @ 通常由 payload 的 "at" 字段驱动，但客户端是否直观展示
+          “@了谁”与正文是否包含 "@昵称" 也有关。
+        - 这里仅做字符串层面的追加，并尽量避免重复追加。
+        """
+        if not text:
+            return text
+
+        conversation_type = getattr(incoming_message, "conversation_type", None)
+        # 私聊没有必要 @，避免噪音；群聊才追加
+        if conversation_type != "2":
+            return text
+
+        sender_nick = (getattr(incoming_message, "sender_nick", "") or "").strip()
+        sender_staff_id = (getattr(incoming_message, "sender_staff_id", "") or "").strip()
+        mention_target = sender_nick or sender_staff_id
+        if not mention_target:
+            return text
+
+        mention_token = f"@{mention_target}"
+        stripped = text.rstrip()
+        # 已经以最后一行/结尾形式包含 @xxx 时不重复追加
+        last_line = stripped.splitlines()[-1].strip() if stripped.splitlines() else ""
+        if last_line == mention_token or stripped.endswith(mention_token):
+            return text
+
+        # 用空行分隔，兼容纯文本/markdown
+        return f"{stripped}\n\n{mention_token}"
     
     if DINGTALK_STREAM_AVAILABLE:
         class _ChatbotHandler(dingtalk_stream.ChatbotHandler):
@@ -101,14 +135,15 @@ class DingtalkStreamHandler:
                         
                         # 发送回复
                         if response and response.text:
+                            reply_text = self._parent._append_at_trigger_user(response.text, incoming)
                             if response.markdown:
                                 self.reply_markdown(
                                     title="股票分析助手",
-                                    text=response.text,
+                                    text=reply_text,
                                     incoming_message=incoming
                                 )
                             else:
-                                self.reply_text(response.text, incoming)
+                                self.reply_text(reply_text, incoming)
                     
                     return AckMessage.STATUS_OK, 'OK'
                     

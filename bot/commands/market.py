@@ -30,27 +30,27 @@ class MarketCommand(BotCommand):
     用法：
         /market - 执行大盘复盘
     """
-    
+
     @property
     def name(self) -> str:
         return "market"
-    
+
     @property
     def aliases(self) -> List[str]:
         return ["m", "大盘", "复盘", "行情"]
-    
+
     @property
     def description(self) -> str:
         return "大盘复盘分析"
-    
+
     @property
     def usage(self) -> str:
         return "/market"
-    
+
     def execute(self, message: BotMessage, args: List[str]) -> BotResponse:
         """执行大盘复盘命令"""
         logger.info(f"[MarketCommand] 开始大盘复盘分析")
-        
+
         # 在后台线程中执行复盘（避免阻塞）
         thread = threading.Thread(
             target=self._run_market_review,
@@ -58,7 +58,7 @@ class MarketCommand(BotCommand):
             daemon=True
         )
         thread.start()
-        
+
         return BotResponse.markdown_response(
             "✅ **大盘复盘任务已启动**\n\n"
             "正在分析：\n"
@@ -68,7 +68,7 @@ class MarketCommand(BotCommand):
             "• 后市展望\n\n"
             "分析完成后将自动推送结果。"
         )
-    
+
     def _run_market_review(self, message: BotMessage) -> None:
         """后台执行大盘复盘"""
         try:
@@ -77,10 +77,10 @@ class MarketCommand(BotCommand):
             from market_analyzer import MarketAnalyzer
             from search_service import SearchService
             from analyzer import GeminiAnalyzer
-            
+
             config = get_config()
-            notifier = NotificationService()
-            
+            notifier = NotificationService(source_message=message)
+
             # 初始化搜索服务
             search_service = None
             if config.bocha_api_keys or config.tavily_api_keys or config.serpapi_keys:
@@ -89,20 +89,20 @@ class MarketCommand(BotCommand):
                     tavily_keys=config.tavily_api_keys,
                     serpapi_keys=config.serpapi_keys
                 )
-            
+
             # 初始化 AI 分析器
             analyzer = None
             if config.gemini_api_key or config.openai_api_key:
                 analyzer = GeminiAnalyzer()
-            
+
             # 执行复盘
             market_analyzer = MarketAnalyzer(
                 search_service=search_service,
                 analyzer=analyzer
             )
-            
+
             review_report = market_analyzer.run_daily_review()
-            
+
             if review_report:
                 # 推送结果
                 report_content = f"🎯 **大盘复盘**\n\n{review_report}"
@@ -110,7 +110,7 @@ class MarketCommand(BotCommand):
                 logger.info("[MarketCommand] 大盘复盘完成并已推送")
             else:
                 logger.warning("[MarketCommand] 大盘复盘返回空结果")
-                
+
         except Exception as e:
             logger.error(f"[MarketCommand] 大盘复盘失败: {e}")
             logger.exception(e)

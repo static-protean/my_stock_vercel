@@ -130,6 +130,8 @@ class DingtalkStreamHandler:
             raw_data: 原始回调数据
         """
         try:
+            raw_data = dict(raw_data or {})
+            
             # 获取消息内容
             raw_content = incoming.text.content if incoming.text else ''
             
@@ -147,6 +149,15 @@ class DingtalkStreamHandler:
             
             # 是否 @了机器人（Stream 模式下收到的消息一般都是 @机器人的）
             mentioned = True
+            
+            # 提取 sessionWebhook，便于异步推送
+            session_webhook = (
+                getattr(incoming, 'session_webhook', None)
+                or raw_data.get('sessionWebhook')
+                or raw_data.get('session_webhook')
+            )
+            if session_webhook:
+                raw_data['_session_webhook'] = session_webhook
             
             return BotMessage(
                 platform='dingtalk',

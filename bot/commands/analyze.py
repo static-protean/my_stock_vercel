@@ -80,7 +80,8 @@ class AnalyzeCommand(BotCommand):
             # 提交异步分析任务
             result = service.submit_analysis(
                 code=code,
-                report_type=ReportType.from_str(report_type)
+                report_type=ReportType.from_str(report_type),
+                source_message=message
             )
             
             if result.get("success"):

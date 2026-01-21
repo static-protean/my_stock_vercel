@@ -85,17 +85,20 @@ class HelpCommand(BotCommand):
                 if en_aliases:
                     aliases_str = f" ({', '.join(prefix + a for a in en_aliases[:2])})"
             
-            lines.append(f"• `{prefix}{cmd.name}`{aliases_str} - {cmd.description}")
-        
+            lines.append(f"• {prefix}{cmd.name}{aliases_str} - {cmd.description}")
+            lines.append("")
+
         lines.extend([
             "",
             "---",
-            f"💡 输入 `{prefix}help <命令名>` 查看详细用法",
+            f"💡 输入 {prefix}help <命令名> 查看详细用法",
             "",
             "**示例：**",
-            f"• `{prefix}analyze 600519` - 分析贵州茅台",
-            f"• `{prefix}market` - 查看大盘复盘",
-            f"• `{prefix}batch` - 批量分析自选股",
+            "",
+            f"• {prefix}analyze 301023 - 奕帆传动",
+            "",
+            f"• {prefix}market - 查看大盘复盘",
+            # f'• {prefix}batch - 批量分析自选股',
         ])
         
         return "\n".join(lines)

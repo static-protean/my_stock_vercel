@@ -64,10 +64,9 @@ class AnalyzeCommand(BotCommand):
         code = args[0].lower()
         
         # 检查是否需要完整报告
-        report_type = "simple"
-        if len(args) > 1 and args[1].lower() in ["full", "完整", "详细"]:
-            report_type = "full"
-        
+        report_type = "full"
+        # if len(args) > 1 and args[1].lower() in ["full", "完整", "详细"]:
+        #     report_type = "full"
         logger.info(f"[AnalyzeCommand] 分析股票: {code}, 报告类型: {report_type}")
         
         try:

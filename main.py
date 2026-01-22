@@ -895,21 +895,35 @@ def run_full_analysis(
 
 def start_bot_stream_clients(config: Config) -> None:
     """Start bot stream clients when enabled in config."""
-    if not config.dingtalk_stream_enabled:
-        return
-
-    try:
-        from bot.platforms import start_dingtalk_stream_background, DINGTALK_STREAM_AVAILABLE
-        if DINGTALK_STREAM_AVAILABLE:
-            if start_dingtalk_stream_background():
-                logger.info("[Main] Dingtalk Stream client started in background.")
+    # 启动钉钉 Stream 客户端
+    if config.dingtalk_stream_enabled:
+        try:
+            from bot.platforms import start_dingtalk_stream_background, DINGTALK_STREAM_AVAILABLE
+            if DINGTALK_STREAM_AVAILABLE:
+                if start_dingtalk_stream_background():
+                    logger.info("[Main] Dingtalk Stream client started in background.")
+                else:
+                    logger.warning("[Main] Dingtalk Stream client failed to start.")
             else:
-                logger.warning("[Main] Dingtalk Stream client failed to start.")
-        else:
-            logger.warning("[Main] Dingtalk Stream enabled but SDK is missing.")
-            logger.warning("[Main] Run: pip install dingtalk-stream")
-    except Exception as exc:
-        logger.error(f"[Main] Failed to start Dingtalk Stream client: {exc}")
+                logger.warning("[Main] Dingtalk Stream enabled but SDK is missing.")
+                logger.warning("[Main] Run: pip install dingtalk-stream")
+        except Exception as exc:
+            logger.error(f"[Main] Failed to start Dingtalk Stream client: {exc}")
+
+    # 启动飞书 Stream 客户端
+    if getattr(config, 'feishu_stream_enabled', False):
+        try:
+            from bot.platforms import start_feishu_stream_background, FEISHU_SDK_AVAILABLE
+            if FEISHU_SDK_AVAILABLE:
+                if start_feishu_stream_background():
+                    logger.info("[Main] Feishu Stream client started in background.")
+                else:
+                    logger.warning("[Main] Feishu Stream client failed to start.")
+            else:
+                logger.warning("[Main] Feishu Stream enabled but SDK is missing.")
+                logger.warning("[Main] Run: pip install lark-oapi")
+        except Exception as exc:
+            logger.error(f"[Main] Failed to start Feishu Stream client: {exc}")
 
 
 def main() -> int:

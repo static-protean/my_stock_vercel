@@ -136,6 +136,7 @@ class Config:
     # 飞书机器人（事件订阅）- 已有 feishu_app_id, feishu_app_secret
     feishu_verification_token: Optional[str] = None  # 事件订阅验证 Token
     feishu_encrypt_key: Optional[str] = None         # 消息加密密钥（可选）
+    feishu_stream_enabled: bool = False              # 是否启用 Stream 长连接模式（无需公网IP）
     
     # 钉钉机器人
     dingtalk_app_key: Optional[str] = None      # 应用 AppKey
@@ -256,6 +257,7 @@ class Config:
             # 飞书机器人
             feishu_verification_token=os.getenv('FEISHU_VERIFICATION_TOKEN'),
             feishu_encrypt_key=os.getenv('FEISHU_ENCRYPT_KEY'),
+            feishu_stream_enabled=os.getenv('FEISHU_STREAM_ENABLED', 'false').lower() == 'true',
             # 钉钉机器人
             dingtalk_app_key=os.getenv('DINGTALK_APP_KEY'),
             dingtalk_app_secret=os.getenv('DINGTALK_APP_SECRET'),

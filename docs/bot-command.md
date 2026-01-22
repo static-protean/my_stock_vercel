@@ -197,7 +197,7 @@ class CommandDispatcher:
 
 ## 五、Webhook 路由
 
-在 [web/router.py](../../web/router.py) 中注册新路由：
+在 [web/router.py](../web/router.py) 中注册新路由：
 
 ```python
 # Webhook 路由
@@ -209,7 +209,7 @@ class CommandDispatcher:
 
 ## 配置
 
-在 [config.py](../../config.py) 中新增机器人配置：
+在 [config.py](../config.py) 中新增机器人配置：
 
 ```python
 # === 机器人配置 ===
@@ -255,7 +255,7 @@ telegram_webhook_secret: str           # 新增：Webhook 密钥
 - 支持命令频率限制（防刷）
 - 敏感操作（如批量分析）可设置权限白名单
 
-在 [config.py](../../config.py) 中新增机器人安全配置：
+在 [config.py](../config.py) 中新增机器人安全配置：
 
 ```python
     bot_rate_limit_requests: int = 10     # 频率限制：窗口内最大请求数

@@ -37,3 +37,6 @@ httpx[socks]                # HTTP 客户端 + SOCKS 代理支持（OpenAI 可�
 
 # 数据库
 # SQLite 是 Python 内置，无需额外安装
+
+# Discord 机器人
+discord.py>=2.0.0              # Discord 机器人开发库

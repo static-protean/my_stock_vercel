@@ -7,8 +7,8 @@ flowchart TB
     subgraph Platforms [外部平台]
         FS[飞书]
         DT[钉钉]
-        WC[企业微信]
-        TG[Telegram]
+        WC[企业微信（开发中）]
+        TG[Telegram（开发中）]
         More[更多平台...]
     end
 
@@ -62,8 +62,8 @@ bot/
     ├── feishu.py           # 飞书机器人
     ├── dingtalk.py         # 钉钉机器人
     ├── dingtalk_stream.py  # 钉钉机器人Stream
-    ├── wecom.py            # 企业微信机器人
-    └── telegram.py         # Telegram 机器人
+    ├── wecom.py            # 企业微信机器人 （开发中）
+    └── telegram.py         # Telegram 机器人 （开发中）
 ```
 
 ## 三、核心抽象设计
@@ -203,8 +203,8 @@ class CommandDispatcher:
 # Webhook 路由
 /bot/feishu      # POST - 飞书事件回调
 /bot/dingtalk    # POST - 钉钉事件回调
-/bot/wecom       # POST - 企业微信事件回调
-/bot/telegram    # POST - Telegram 更新回调
+/bot/wecom       # POST - 企业微信事件回调 （开发中）
+/bot/telegram    # POST - Telegram 更新回调 （开发中）
 ```
 
 ## 配置
@@ -226,11 +226,11 @@ feishu_encrypt_key: str                # 新增：加密密钥
 dingtalk_app_key: str                  # 新增
 dingtalk_app_secret: str               # 新增
 
-# 企业微信机器人
+# 企业微信机器人（开发中）
 wecom_token: str                       # 新增：回调 Token
 wecom_encoding_aes_key: str            # 新增：EncodingAESKey
 
-# Telegram 机器人
+# Telegram 机器人（开发中）
 telegram_bot_token: str                # 已有
 telegram_webhook_secret: str           # 新增：Webhook 密钥
 ```

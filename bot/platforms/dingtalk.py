@@ -15,7 +15,6 @@ import hmac
 import base64
 import time
 import logging
-import json
 from datetime import datetime
 from typing import Dict, Any, Optional
 from urllib.parse import quote_plus

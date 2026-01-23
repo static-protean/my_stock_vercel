@@ -13,6 +13,7 @@ import os
 import sys
 import logging
 import asyncio
+import argparse
 from datetime import datetime
 
 # 添加项目根目录到Python路径
@@ -36,9 +37,9 @@ except ImportError:
     sys.exit(1)
 
 # 导入项目模块
-from config import get_config
+from config import get_config, Config
+from main import parse_arguments, run_full_analysis, run_market_review
 from notification import NotificationService
-from main import run_analysis
 
 # 获取配置
 config = get_config()
@@ -52,14 +53,12 @@ class StockAnalysisBot(commands.Bot):
         intents.message_content = True
         
         super().__init__(
-            command_prefix='!',
             intents=intents,
             description='A股自选股智能分析机器人'
         )
         
-        # 初始化通知服务
-        self.notification_service = NotificationService()
-        
+        logger.info("机器人初始化完成")
+    
     async def setup_hook(self):
         """设置钩子，用于加载命令"""
         # 同步全局命令
@@ -101,36 +100,51 @@ async def stock_analyze(
     logger.info(f"用户 {interaction.user} 请求分析股票：{stock_code}")
     
     try:
-        # 设置环境变量，覆盖默认配置
-        os.environ['STOCK_LIST'] = stock_code
-        os.environ['DEBUG'] = 'True'
+        # 创建命令行参数对象
+        args = argparse.Namespace(
+            debug=True,
+            dry_run=False,
+            no_notify=False,
+            single_notify=False,
+            workers=None,
+            schedule=False,
+            market_review=False,
+            no_market_review=not full_report,
+            webui=False,
+            webui_only=False,
+            stocks=None  # 后面会单独处理stock_code
+        )
         
-        # 运行分析
-        if full_report:
-            result = run_analysis()
-        else:
-            result = run_analysis(no_market_review=True)
+        # 创建独立配置副本，避免修改全局配置
+        bot_config = Config()
         
-        if result:
-            # 发送成功消息
-            await interaction.followup.send(
-                f"✅ 股票分析完成！{stock_code} 的分析报告已生成。",
-                ephemeral=False
-            )
-            logger.info(f"股票分析完成：{stock_code}")
-        else:
-            await interaction.followup.send(
-                f"❌ 股票分析失败！请检查股票代码 {stock_code} 是否正确。",
-                ephemeral=False
-            )
-            logger.error(f"股票分析失败：{stock_code}")
+        # 运行分析（在单独线程中执行，避免阻塞事件循环）
+        result = await asyncio.to_thread(
+            run_full_analysis,
+            config=bot_config,
+            args=args,
+            stock_codes=[stock_code]
+        )
+        
+        # 发送成功消息
+        await interaction.followup.send(
+            f"✅ 股票分析完成！{stock_code} 的分析报告已生成。",
+            ephemeral=False
+        )
+        logger.info(f"股票分析完成：{stock_code}")
             
+    except ValueError as e:
+        await interaction.followup.send(
+            f"❌ 股票代码错误：{str(e)}",
+            ephemeral=False
+        )
+        logger.error(f"股票代码错误：{stock_code} - {e}")
     except Exception as e:
         await interaction.followup.send(
             f"❌ 分析过程中发生错误：{str(e)}",
             ephemeral=False
         )
-        logger.error(f"股票分析异常：{e}", exc_info=True)
+        logger.error(f"股票分析异常：{stock_code} - {e}", exc_info=True)
 
 @bot.tree.command(
     name="market_review",
@@ -149,15 +163,20 @@ async def market_review(
     logger.info(f"用户 {interaction.user} 请求大盘复盘")
     
     try:
-        # 设置环境变量，仅运行大盘复盘
-        os.environ['DEBUG'] = 'True'
+        # 创建通知服务实例
+        notifier = NotificationService()
         
-        # 运行大盘复盘
-        result = run_analysis(market_review_only=True)
+        # 运行大盘复盘（在单独线程中执行，避免阻塞事件循环）
+        review_result = await asyncio.to_thread(
+            run_market_review,
+            notifier=notifier,
+            analyzer=None,
+            search_service=None
+        )
         
-        if result:
+        if review_result:
             await interaction.followup.send(
-                "✅ 大盘复盘完成！",
+                "✅ 大盘复盘完成！报告已生成。",
                 ephemeral=False
             )
             logger.info("大盘复盘完成")
@@ -266,10 +285,6 @@ def main():
     # 检查必要配置
     if not config.discord_bot_token:
         logger.error("请在.env文件中配置DISCORD_BOT_TOKEN")
-        return 1
-    
-    if not config.discord_main_channel_id:
-        logger.error("请在.env文件中配置DISCORD_MAIN_CHANNEL_ID")
         return 1
     
     logger.info("正在启动Discord机器人...")

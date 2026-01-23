@@ -13,7 +13,6 @@ import os
 import sys
 import logging
 import asyncio
-import argparse
 from datetime import datetime
 
 # 添加项目根目录到Python路径
@@ -37,8 +36,8 @@ except ImportError:
     sys.exit(1)
 
 # 导入项目模块
-from config import get_config, Config
-from main import parse_arguments, run_full_analysis, run_market_review
+from config import get_config
+from main import run_full_analysis, run_market_review
 from notification import NotificationService
 
 # 获取配置
@@ -56,6 +55,9 @@ class StockAnalysisBot(commands.Bot):
             intents=intents,
             description='A股自选股智能分析机器人'
         )
+        
+        # 初始化服务实例（复用，避免重复创建）
+        self.notification_service = NotificationService()
         
         logger.info("机器人初始化完成")
     
@@ -100,30 +102,12 @@ async def stock_analyze(
     logger.info(f"用户 {interaction.user} 请求分析股票：{stock_code}")
     
     try:
-        # 创建命令行参数对象
-        args = argparse.Namespace(
-            debug=True,
-            dry_run=False,
-            no_notify=False,
-            single_notify=False,
-            workers=None,
-            schedule=False,
-            market_review=False,
-            no_market_review=not full_report,
-            webui=False,
-            webui_only=False,
-            stocks=None  # 后面会单独处理stock_code
-        )
-        
-        # 创建独立配置副本，避免修改全局配置
-        bot_config = Config()
-        
-        # 运行分析（在单独线程中执行，避免阻塞事件循环）
+        # 直接调用run_full_analysis，传递关键参数
+        # 避免使用argparse.Namespace，减少耦合
         result = await asyncio.to_thread(
-            run_full_analysis,
-            config=bot_config,
-            args=args,
-            stock_codes=[stock_code]
+            _run_stock_analysis,
+            stock_code=stock_code,
+            full_report=full_report
         )
         
         # 发送成功消息
@@ -141,7 +125,7 @@ async def stock_analyze(
         logger.error(f"股票代码错误：{stock_code} - {e}")
     except Exception as e:
         await interaction.followup.send(
-            f"❌ 分析过程中发生错误：{str(e)}",
+            f"❌ 分析过程中发生错误，请稍后重试或联系管理员。",
             ephemeral=False
         )
         logger.error(f"股票分析异常：{stock_code} - {e}", exc_info=True)
@@ -163,13 +147,10 @@ async def market_review(
     logger.info(f"用户 {interaction.user} 请求大盘复盘")
     
     try:
-        # 创建通知服务实例
-        notifier = NotificationService()
-        
         # 运行大盘复盘（在单独线程中执行，避免阻塞事件循环）
         review_result = await asyncio.to_thread(
             run_market_review,
-            notifier=notifier,
+            notifier=bot.notification_service,
             analyzer=None,
             search_service=None
         )
@@ -182,14 +163,14 @@ async def market_review(
             logger.info("大盘复盘完成")
         else:
             await interaction.followup.send(
-                "❌ 大盘复盘失败！",
+                "❌ 大盘复盘失败，请确保相关服务已配置。",
                 ephemeral=False
             )
             logger.error("大盘复盘失败")
             
     except Exception as e:
         await interaction.followup.send(
-            f"❌ 大盘复盘过程中发生错误：{str(e)}",
+            f"❌ 大盘复盘过程中发生错误，请稍后重试或联系管理员。",
             ephemeral=False
         )
         logger.error(f"大盘复盘异常：{e}", exc_info=True)
@@ -278,6 +259,47 @@ async def about_command(
         about_message,
         ephemeral=False,
         embed=None
+    )
+
+def _run_stock_analysis(stock_code: str, full_report: bool = False):
+    """运行股票分析的包装函数
+    
+    用于在单独线程中执行，避免阻塞事件循环
+    
+    Args:
+        stock_code: 股票代码
+        full_report: 是否生成完整报告
+    
+    Returns:
+        分析结果
+    """
+    import argparse
+    from config import Config
+    from main import run_full_analysis
+    
+    # 创建临时的命令行参数对象
+    args = argparse.Namespace(
+        debug=True,
+        dry_run=False,
+        no_notify=False,
+        single_notify=False,
+        workers=None,
+        schedule=False,
+        market_review=False,
+        no_market_review=not full_report,
+        webui=False,
+        webui_only=False,
+        stocks=None
+    )
+    
+    # 创建独立配置副本，避免修改全局配置
+    bot_config = Config()
+    
+    # 运行分析
+    return run_full_analysis(
+        config=bot_config,
+        args=args,
+        stock_codes=[stock_code]
     )
 
 def main():

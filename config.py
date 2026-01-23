@@ -126,6 +126,10 @@ class Config:
     webui_host: str = "127.0.0.1"
     webui_port: int = 8000
     
+    # === Discord 机器人配置 ===
+    discord_bot_token: Optional[str] = None  # Discord 机器人 Token
+    discord_bot_status: str = "A股智能分析 | /help"  # 机器人状态信息
+    
     # 单例实例存储
     _instance: Optional['Config'] = None
     
@@ -222,6 +226,8 @@ class Config:
             webui_enabled=os.getenv('WEBUI_ENABLED', 'false').lower() == 'true',
             webui_host=os.getenv('WEBUI_HOST', '127.0.0.1'),
             webui_port=int(os.getenv('WEBUI_PORT', '8000')),
+            discord_bot_token=os.getenv('DISCORD_BOT_TOKEN'),
+            discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
         )
     
     @classmethod

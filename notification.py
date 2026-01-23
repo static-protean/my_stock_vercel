@@ -127,6 +127,9 @@ class NotificationService:
         # 各渠道的 Webhook URL
         self._wechat_url = config.wechat_webhook_url
         self._feishu_url = getattr(config, 'feishu_webhook_url', None)
+
+        # 微信消息类型配置
+        self._wechat_msg_type = getattr(config, 'wechat_msg_type', 'markdown')
         
         # Telegram 配置
         self._telegram_config = {
@@ -160,7 +163,7 @@ class NotificationService:
         
         # 消息长度限制（字节）
         self._feishu_max_bytes = getattr(config, 'feishu_max_bytes', 20000)
-        self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', 4000)
+        self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', self._get_wechat_msg_max_bytes())
         
         # 检测所有已配置的渠道
         self._available_channels = self._detect_all_channels()
@@ -173,6 +176,15 @@ class NotificationService:
             channel_names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
             channel_names.extend(self._context_channels)
             logger.info(f"已配置 {len(channel_names)} 个通知渠道：{', '.join(channel_names)}")
+    
+    def _get_wechat_msg_max_bytes(self) -> int:
+        """获取企业微信消息最大字节数"""
+        if self._wechat_msg_type == 'text':
+            # text 类型最大字节数为 2048
+            return 2048
+        else:
+            # markdown 类型最大字节数为 4000
+            return 4000
     
     def _detect_all_channels(self) -> List[NotificationChannel]:
         """
@@ -1096,14 +1108,26 @@ class NotificationService:
         推送消息到企业微信机器人
         
         企业微信 Webhook 消息格式：
+        支持 markdown 类型以及 text 类型, markdown 类型在微信中无法展示，可以使用 text 类型,
+        markdown 类型会解析 markdown 格式,text 类型会直接发送纯文本。
+
+        markdown 类型示例：
         {
             "msgtype": "markdown",
             "markdown": {
-                "content": "Markdown 内容"
+                "content": "## 标题\n\n内容"
             }
         }
         
-        注意：企业微信 Markdown 限制 4096 字节（非字符），超长内容会自动分批发送
+        text 类型示例：
+        {
+            "msgtype": "text",
+            "text": {
+                "content": "内容"
+            }
+        }
+
+        注意：企业微信 Markdown 限制 4096 字节（非字符）, Text 类型限制 2048 字节，超长内容会自动分批发送
         可通过环境变量 WECHAT_MAX_BYTES 调整限制值
         
         Args:
@@ -1301,14 +1325,26 @@ class NotificationService:
                 truncated = truncated[:-1]
         return ""
     
+    def _gen_wechat_payload(self, content: str, msg_type: str) -> dict:
+        """生成企业微信消息 payload"""
+        if msg_type == 'text':
+            return {
+                "msgtype": "text",
+                "text": {
+                    "content": content
+                }
+            }
+        else:
+            return {
+                "msgtype": "markdown",
+                "markdown": {
+                    "content": content
+                }
+            }
+
     def _send_wechat_message(self, content: str) -> bool:
         """发送企业微信消息"""
-        payload = {
-            "msgtype": "markdown",
-            "markdown": {
-                "content": content
-            }
-        }
+        payload = self._gen_wechat_payload(content, self._wechat_msg_type)
         
         response = requests.post(
             self._wechat_url,

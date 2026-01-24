@@ -427,29 +427,29 @@ class StockAnalysisPipeline:
             return "巨量"
     
     def process_single_stock(
-        self, 
-        code: str, 
+        self,
+        code: str,
         skip_analysis: bool = False,
         single_stock_notify: bool = False,
         report_type: ReportType = ReportType.SIMPLE
     ) -> Optional[AnalysisResult]:
         """
         处理单只股票的完整流程
-        
+
         包括：
         1. 获取数据
         2. 保存数据
         3. AI 分析
         4. 单股推送（可选，#55）
-        
+
         此方法会被线程池调用，需要处理好异常
-        
+
         Args:
             code: 股票代码
             skip_analysis: 是否跳过 AI 分析
             single_stock_notify: 是否启用单股推送模式（每分析完一只立即推送）
-            report_type: 报告类型枚举
-            
+            report_type: 报告类型枚举（从配置读取，Issue #119）
+
         Returns:
             AnalysisResult 或 None
         """
@@ -543,8 +543,14 @@ class StockAnalysisPipeline:
         
         # 单股推送模式（#55）：从配置读取
         single_stock_notify = getattr(self.config, 'single_stock_notify', False)
+        # Issue #119: 从配置读取报告类型
+        report_type_str = getattr(self.config, 'report_type', 'simple').lower()
+        report_type = ReportType.FULL if report_type_str == 'full' else ReportType.SIMPLE
+        # Issue #128: 从配置读取分析间隔
+        analysis_delay = getattr(self.config, 'analysis_delay', 0)
+
         if single_stock_notify:
-            logger.info("已启用单股推送模式：每分析完一只股票立即推送")
+            logger.info(f"已启用单股推送模式：每分析完一只股票立即推送（报告类型: {report_type_str}）")
         
         results: List[AnalysisResult] = []
         
@@ -554,21 +560,29 @@ class StockAnalysisPipeline:
             # 提交任务
             future_to_code = {
                 executor.submit(
-                    self.process_single_stock, 
-                    code, 
+                    self.process_single_stock,
+                    code,
                     skip_analysis=dry_run,
-                    single_stock_notify=single_stock_notify and send_notification
+                    single_stock_notify=single_stock_notify and send_notification,
+                    report_type=report_type  # Issue #119: 传递报告类型
                 ): code
                 for code in stock_codes
             }
             
             # 收集结果
-            for future in as_completed(future_to_code):
+            for idx, future in enumerate(as_completed(future_to_code)):
                 code = future_to_code[future]
                 try:
                     result = future.result()
                     if result:
                         results.append(result)
+
+                    # Issue #128: 个股之间添加延迟，避免API限流
+                    # 在非最后一只股票完成后添加延迟
+                    if idx < len(stock_codes) - 1 and analysis_delay > 0:
+                        logger.debug(f"等待 {analysis_delay} 秒后继续下一只股票...")
+                        time.sleep(analysis_delay)
+
                 except Exception as e:
                     logger.error(f"[{code}] 任务执行失败: {e}")
         
@@ -830,7 +844,13 @@ def run_full_analysis(
             dry_run=args.dry_run,
             send_notification=not args.no_notify
         )
-        
+
+        # Issue #128: 分析间隔 - 在个股分析和大盘分析之间添加延迟
+        analysis_delay = getattr(config, 'analysis_delay', 0)
+        if analysis_delay > 0 and config.market_review_enabled and not args.no_market_review:
+            logger.info(f"等待 {analysis_delay} 秒后执行大盘复盘（避免API限流）...")
+            time.sleep(analysis_delay)
+
         # 2. 运行大盘复盘（如果启用且不是仅个股模式）
         market_report = ""
         if config.market_review_enabled and not args.no_market_review:

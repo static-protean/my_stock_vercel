@@ -306,26 +306,26 @@ class NotificationService:
         return self._send_via_source_context(content)
     
     def generate_daily_report(
-        self, 
+        self,
         results: List[AnalysisResult],
         report_date: Optional[str] = None
     ) -> str:
         """
         生成 Markdown 格式的日报（详细版）
-        
+
         Args:
             results: 分析结果列表
             report_date: 报告日期（默认今天）
-            
+
         Returns:
             Markdown 格式的日报内容
         """
         if report_date is None:
             report_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 标题
         report_lines = [
-            f"# 📅 {report_date} A股自选股智能分析报告",
+            f"# 📅 {report_date} 股票智能分析报告",
             "",
             f"> 共分析 **{len(results)}** 只股票 | 报告生成时间：{datetime.now().strftime('%H:%M:%S')}",
             "",
@@ -943,26 +943,26 @@ class NotificationService:
     def generate_wechat_summary(self, results: List[AnalysisResult]) -> str:
         """
         生成企业微信精简版日报（控制在4000字符内）
-        
+
         Args:
             results: 分析结果列表
-            
+
         Returns:
             精简版 Markdown 内容
         """
         report_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 按评分排序
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
-        
+
         # 统计
         buy_count = sum(1 for r in results if r.operation_advice in ['买入', '加仓', '强烈买入'])
         sell_count = sum(1 for r in results if r.operation_advice in ['卖出', '减仓', '强烈卖出'])
         hold_count = sum(1 for r in results if r.operation_advice in ['持有', '观望'])
         avg_score = sum(r.sentiment_score for r in results) / len(results) if results else 0
-        
+
         lines = [
-            f"## 📅 {report_date} A股分析报告",
+            f"## 📅 {report_date} 股票分析报告",
             "",
             f"> 共 **{len(results)}** 只 | 🟢买入:{buy_count} 🟡持有:{hold_count} 🔴卖出:{sell_count} | 均分:{avg_score:.0f}",
             "",
@@ -1702,7 +1702,7 @@ class NotificationService:
             # 生成主题
             if subject is None:
                 date_str = datetime.now().strftime('%Y-%m-%d')
-                subject = f"📈 A股智能分析报告 - {date_str}"
+                subject = f"📈 股票智能分析报告 - {date_str}"
             
             # 将 Markdown 转换为简单 HTML
             html_content = self._markdown_to_html(content)

@@ -121,7 +121,22 @@ class Config:
     schedule_enabled: bool = False            # 是否启用定时任务
     schedule_time: str = "18:00"              # 每日推送时间（HH:MM 格式）
     market_review_enabled: bool = True        # 是否启用大盘复盘
-    
+
+    # === 实时行情增强数据配置 ===
+    # 实时行情开关（关闭后使用历史收盘价进行分析）
+    enable_realtime_quote: bool = True
+    # 筹码分布开关（该接口不稳定，云端部署建议关闭）
+    enable_chip_distribution: bool = True
+    # 实时行情数据源优先级（逗号分隔）
+    realtime_source_priority: str = "akshare_sina,tencent,efinance,akshare_em"
+    # 实时行情缓存时间（秒）
+    realtime_cache_ttl: int = 600
+    # 熔断器冷却时间（秒）
+    circuit_breaker_cooldown: int = 300
+
+    # Discord 机器人状态
+    discord_bot_status: str = "A股智能分析 | /help"
+
     # === 流控配置（防封禁关键参数）===
     # Akshare 请求间隔范围（秒）
     akshare_sleep_min: float = 2.0
@@ -134,6 +149,23 @@ class Config:
     max_retries: int = 3
     retry_base_delay: float = 1.0
     retry_max_delay: float = 30.0
+    
+    # === 实时行情增强数据配置 ===
+    # 实时行情开关（关闭后使用历史收盘价进行分析）
+    enable_realtime_quote: bool = True
+    # 筹码分布开关（该接口不稳定，云端部署建议关闭）
+    enable_chip_distribution: bool = True
+    # 实时行情数据源优先级（逗号分隔）
+    # - akshare_sina/tencent: 单股票直连查询，轻量级，推荐放前面
+    # - efinance/akshare_em: 全量拉取全市场数据，数据丰富但负载大
+    # 推荐配置：
+    # - 机器人场景（单股查询多）: "akshare_sina,tencent,efinance,akshare_em"
+    # - 批量分析场景（缓存命中高）: "efinance,akshare_em,akshare_sina,tencent"
+    realtime_source_priority: str = "akshare_sina,tencent,efinance,akshare_em"
+    # 实时行情缓存时间（秒）- 仅对 efinance/akshare_em 全量缓存生效
+    realtime_cache_ttl: int = 600
+    # 熔断器冷却时间（秒）
+    circuit_breaker_cooldown: int = 300
     
     # === WebUI 配置 ===
     webui_enabled: bool = False
@@ -289,6 +321,17 @@ class Config:
             wecom_agent_id=os.getenv('WECOM_AGENT_ID'),
             # Telegram
             telegram_webhook_secret=os.getenv('TELEGRAM_WEBHOOK_SECRET'),
+            # Discord 机器人扩展配置
+            discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
+            # 实时行情增强数据配置
+            enable_realtime_quote=os.getenv('ENABLE_REALTIME_QUOTE', 'true').lower() == 'true',
+            enable_chip_distribution=os.getenv('ENABLE_CHIP_DISTRIBUTION', 'true').lower() == 'true',
+            # 实时行情数据源优先级：
+            # - akshare_sina/tencent: 单股票直连查询，轻量级，推荐放前面
+            # - efinance/akshare_em: 全量拉取，数据丰富但负载大
+            realtime_source_priority=os.getenv('REALTIME_SOURCE_PRIORITY', 'akshare_sina,tencent,efinance,akshare_em'),
+            realtime_cache_ttl=int(os.getenv('REALTIME_CACHE_TTL', '600')),
+            circuit_breaker_cooldown=int(os.getenv('CIRCUIT_BREAKER_COOLDOWN', '300')),
         )
     
     @classmethod

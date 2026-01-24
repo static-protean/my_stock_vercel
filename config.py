@@ -108,7 +108,13 @@ class Config:
     schedule_time: str = "18:00"              # 每日推送时间（HH:MM 格式）
     market_review_enabled: bool = True        # 是否启用大盘复盘
     
-    # === 流控配置（防封禁关键参数）===
+    # === Discord 机器人配置 ===
+    discord_bot_token: Optional[str] = None  # Discord 机器人 Token
+    discord_bot_status: str = "A股智能分析 | /help"  # 机器人状态信息
+    discord_main_channel_id: Optional[str] = None  # 主频道 ID
+    discord_webhook_url: Optional[str] = None  # Webhook URL（可选）
+    
+    # === 流控配置（防封禁关键参数）=== 
     # Akshare 请求间隔范围（秒）
     akshare_sleep_min: float = 2.0
     akshare_sleep_max: float = 5.0
@@ -228,6 +234,8 @@ class Config:
             webui_port=int(os.getenv('WEBUI_PORT', '8000')),
             discord_bot_token=os.getenv('DISCORD_BOT_TOKEN'),
             discord_bot_status=os.getenv('DISCORD_BOT_STATUS', 'A股智能分析 | /help'),
+            discord_main_channel_id=os.getenv('DISCORD_MAIN_CHANNEL_ID'),
+            discord_webhook_url=os.getenv('DISCORD_WEBHOOK_URL'),
         )
     
     @classmethod

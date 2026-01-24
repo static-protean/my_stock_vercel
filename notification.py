@@ -50,6 +50,7 @@ class NotificationChannel(Enum):
     EMAIL = "email"        # 邮件
     PUSHOVER = "pushover"  # Pushover（手机/桌面推送）
     CUSTOM = "custom"      # 自定义 Webhook
+    DISCORD = "discord"    # Discord
     UNKNOWN = "unknown"    # 未知
 
 
@@ -95,6 +96,7 @@ class ChannelDetector:
             NotificationChannel.EMAIL: "邮件",
             NotificationChannel.PUSHOVER: "Pushover",
             NotificationChannel.CUSTOM: "自定义Webhook",
+            NotificationChannel.DISCORD: "Discord",
             NotificationChannel.UNKNOWN: "未知渠道",
         }
         return names.get(channel, "未知渠道")
@@ -278,10 +280,21 @@ class NotificationService:
             # 添加命令
             self._add_discord_commands()
             
-            # 启动机器人（异步）
-            self._discord_bot_task = asyncio.create_task(
-                self._discord_bot.start(self._discord_config['bot_token'])
-            )
+            try:
+                # 启动机器人（异步）
+                loop = asyncio.get_running_loop()
+                self._discord_bot_task = loop.create_task(
+                    self._discord_bot.start(self._discord_config['bot_token'])
+                )
+            except RuntimeError:
+                # 没有正在运行的事件循环，在单独线程中运行
+                import threading
+                
+                def run_bot():
+                    asyncio.run(self._discord_bot.start(self._discord_config['bot_token']))
+                
+                self._discord_bot_thread = threading.Thread(target=run_bot, daemon=True)
+                self._discord_bot_thread.start()
             
             logger.info("Discord机器人初始化成功")
         except Exception as e:
@@ -2666,6 +2679,8 @@ class NotificationService:
                     result = self.send_to_pushover(content)
                 elif channel == NotificationChannel.CUSTOM:
                     result = self.send_to_custom(content)
+                elif channel == NotificationChannel.DISCORD:
+                    result = self.send_to_discord(content)
                 else:
                     logger.warning(f"不支持的通知渠道: {channel}")
                     result = False

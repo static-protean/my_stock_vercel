@@ -7,6 +7,21 @@
 
 ## [Unreleased]
 
+### 新增
+- 📲 PushPlus 推送支持（[#38](https://github.com/ZhuLinsen/daily_stock_analysis/issues/38)）
+  - 支持国内 PushPlus 推送服务
+  - 通过 `PUSHPLUS_TOKEN` 配置
+- 📊 通知格式优化（[#112](https://github.com/ZhuLinsen/daily_stock_analysis/issues/112)）
+  - 在通知开头添加所有股票的评分摘要
+  - 便于快速查看整体分析结果
+- ⏱️ 分析间隔配置（[#128](https://github.com/ZhuLinsen/daily_stock_analysis/issues/128)）
+  - 新增 `ANALYSIS_DELAY` 环境变量
+  - 在个股分析和大盘分析之间添加延迟，避免触发 Gemini API 限流
+- 📄 报告类型配置（[#119](https://github.com/ZhuLinsen/daily_stock_analysis/issues/119)）
+  - 新增 `REPORT_TYPE` 环境变量（simple/full）
+  - 修复 Docker 环境下单股推送不完整的问题
+  - 支持选择精简版或完整版报告
+
 ### 计划中
 - Web 管理界面
 

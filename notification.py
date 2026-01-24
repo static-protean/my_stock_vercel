@@ -42,6 +42,7 @@ class NotificationChannel(Enum):
     TELEGRAM = "telegram"  # Telegram
     EMAIL = "email"        # 邮件
     PUSHOVER = "pushover"  # Pushover（手机/桌面推送）
+    PUSHPLUS = "pushplus"  # PushPlus（国内推送服务）
     CUSTOM = "custom"      # 自定义 Webhook
     DISCORD = "discord"    # Discord 机器人 (Bot)
     UNKNOWN = "unknown"    # 未知
@@ -88,6 +89,7 @@ class ChannelDetector:
             NotificationChannel.TELEGRAM: "Telegram",
             NotificationChannel.EMAIL: "邮件",
             NotificationChannel.PUSHOVER: "Pushover",
+            NotificationChannel.PUSHPLUS: "PushPlus",
             NotificationChannel.CUSTOM: "自定义Webhook",
             NotificationChannel.DISCORD: "Discord机器人",
             NotificationChannel.UNKNOWN: "未知渠道",
@@ -148,7 +150,10 @@ class NotificationService:
             'user_key': getattr(config, 'pushover_user_key', None),
             'api_token': getattr(config, 'pushover_api_token', None),
         }
-        
+
+        # PushPlus 配置
+        self._pushplus_token = getattr(config, 'pushplus_token', None)
+
         # 自定义 Webhook 配置
         self._custom_webhook_urls = getattr(config, 'custom_webhook_urls', []) or []
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
@@ -213,7 +218,11 @@ class NotificationService:
         # Pushover
         if self._is_pushover_configured():
             channels.append(NotificationChannel.PUSHOVER)
-        
+
+        # PushPlus
+        if self._pushplus_token:
+            channels.append(NotificationChannel.PUSHPLUS)
+
         # 自定义 Webhook
         if self._custom_webhook_urls:
             channels.append(NotificationChannel.CUSTOM)
@@ -308,26 +317,26 @@ class NotificationService:
         return self._send_via_source_context(content)
     
     def generate_daily_report(
-        self, 
+        self,
         results: List[AnalysisResult],
         report_date: Optional[str] = None
     ) -> str:
         """
         生成 Markdown 格式的日报（详细版）
-        
+
         Args:
             results: 分析结果列表
             report_date: 报告日期（默认今天）
-            
+
         Returns:
             Markdown 格式的日报内容
         """
         if report_date is None:
             report_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 标题
         report_lines = [
-            f"# 📅 {report_date} A股自选股智能分析报告",
+            f"# 📅 {report_date} 股票智能分析报告",
             "",
             f"> 共分析 **{len(results)}** 只股票 | 报告生成时间：{datetime.now().strftime('%H:%M:%S')}",
             "",
@@ -526,42 +535,58 @@ class NotificationService:
             return ('观望', '⚪', '观望')
     
     def generate_dashboard_report(
-        self, 
+        self,
         results: List[AnalysisResult],
         report_date: Optional[str] = None
     ) -> str:
         """
         生成决策仪表盘格式的日报（详细版）
-        
+
         格式：市场概览 + 重要信息 + 核心结论 + 数据透视 + 作战计划
-        
+
         Args:
             results: 分析结果列表
             report_date: 报告日期（默认今天）
-            
+
         Returns:
             Markdown 格式的决策仪表盘日报
         """
         if report_date is None:
             report_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 按评分排序（高分在前）
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
-        
+
         # 统计信息
         buy_count = sum(1 for r in results if r.operation_advice in ['买入', '加仓', '强烈买入'])
         sell_count = sum(1 for r in results if r.operation_advice in ['卖出', '减仓', '强烈卖出'])
         hold_count = sum(1 for r in results if r.operation_advice in ['持有', '观望'])
-        
+
         report_lines = [
             f"# 🎯 {report_date} 决策仪表盘",
             "",
             f"> 共分析 **{len(results)}** 只股票 | 🟢买入:{buy_count} 🟡观望:{hold_count} 🔴卖出:{sell_count}",
             "",
-            "---",
-            "",
         ]
-        
+
+        # === 新增：分析结果摘要 (Issue #112) ===
+        if results:
+            report_lines.extend([
+                "## 📊 分析结果摘要",
+                "",
+            ])
+            for r in sorted_results:
+                emoji = r.get_emoji()
+                report_lines.append(
+                    f"{emoji} **{r.name}({r.code})**: {r.operation_advice} | "
+                    f"评分 {r.sentiment_score} | {r.trend_prediction}"
+                )
+            report_lines.extend([
+                "",
+                "---",
+                "",
+            ])
+
         # 逐个股票的决策仪表盘
         for result in sorted_results:
             signal_text, signal_emoji, signal_tag = self._get_signal_level(result)
@@ -929,26 +954,26 @@ class NotificationService:
     def generate_wechat_summary(self, results: List[AnalysisResult]) -> str:
         """
         生成企业微信精简版日报（控制在4000字符内）
-        
+
         Args:
             results: 分析结果列表
-            
+
         Returns:
             精简版 Markdown 内容
         """
         report_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 按评分排序
         sorted_results = sorted(results, key=lambda x: x.sentiment_score, reverse=True)
-        
+
         # 统计
         buy_count = sum(1 for r in results if r.operation_advice in ['买入', '加仓', '强烈买入'])
         sell_count = sum(1 for r in results if r.operation_advice in ['卖出', '减仓', '强烈卖出'])
         hold_count = sum(1 for r in results if r.operation_advice in ['持有', '观望'])
         avg_score = sum(r.sentiment_score for r in results) / len(results) if results else 0
-        
+
         lines = [
-            f"## 📅 {report_date} A股分析报告",
+            f"## 📅 {report_date} 股票分析报告",
             "",
             f"> 共 **{len(results)}** 只 | 🟢买入:{buy_count} 🟡持有:{hold_count} 🔴卖出:{sell_count} | 均分:{avg_score:.0f}",
             "",
@@ -1712,7 +1737,7 @@ class NotificationService:
             # 生成主题
             if subject is None:
                 date_str = datetime.now().strftime('%Y-%m-%d')
-                subject = f"📈 A股智能分析报告 - {date_str}"
+                subject = f"📈 股票智能分析报告 - {date_str}"
             
             # 将 Markdown 转换为简单 HTML
             html_content = self._markdown_to_html(content)
@@ -2564,6 +2589,70 @@ class NotificationService:
         
         return success
     
+    def send_to_pushplus(self, content: str, title: Optional[str] = None) -> bool:
+        """
+        推送消息到 PushPlus
+
+        PushPlus API 格式：
+        POST http://www.pushplus.plus/send
+        {
+            "token": "用户令牌",
+            "title": "消息标题",
+            "content": "消息内容",
+            "template": "html/txt/json/markdown"
+        }
+
+        PushPlus 特点：
+        - 国内推送服务，免费额度充足
+        - 支持微信公众号推送
+        - 支持多种消息格式
+
+        Args:
+            content: 消息内容（Markdown 格式）
+            title: 消息标题（可选）
+
+        Returns:
+            是否发送成功
+        """
+        if not self._pushplus_token:
+            logger.warning("PushPlus Token 未配置，跳过推送")
+            return False
+
+        # PushPlus API 端点
+        api_url = "http://www.pushplus.plus/send"
+
+        # 处理消息标题
+        if title is None:
+            date_str = datetime.now().strftime('%Y-%m-%d')
+            title = f"📈 股票分析报告 - {date_str}"
+
+        try:
+            payload = {
+                "token": self._pushplus_token,
+                "title": title,
+                "content": content,
+                "template": "markdown"  # 使用 Markdown 格式
+            }
+
+            response = requests.post(api_url, json=payload, timeout=10)
+
+            if response.status_code == 200:
+                result = response.json()
+                if result.get('code') == 200:
+                    logger.info("PushPlus 消息发送成功")
+                    return True
+                else:
+                    error_msg = result.get('msg', '未知错误')
+                    logger.error(f"PushPlus 返回错误: {error_msg}")
+                    return False
+            else:
+                logger.error(f"PushPlus 请求失败: HTTP {response.status_code}")
+                return False
+
+        except Exception as e:
+            logger.error(f"发送 PushPlus 消息失败: {e}")
+            return False
+
     def send_to_discord(self, content: str) -> bool:
         """
         推送消息到 Discord（支持 Webhook 和 Bot API）
@@ -2693,6 +2782,8 @@ class NotificationService:
                     result = self.send_to_email(content)
                 elif channel == NotificationChannel.PUSHOVER:
                     result = self.send_to_pushover(content)
+                elif channel == NotificationChannel.PUSHPLUS:
+                    result = self.send_to_pushplus(content)
                 elif channel == NotificationChannel.CUSTOM:
                     result = self.send_to_custom(content)
                 elif channel == NotificationChannel.DISCORD:

@@ -217,14 +217,14 @@ def _is_etf_code(stock_code: str) -> bool:
 def _is_hk_code(stock_code: str) -> bool:
     """
     判断代码是否为港股
-    
+
     港股代码规则：
     - 5位数字代码，如 '00700' (腾讯控股)
     - 部分港股代码可能带有前缀，如 'hk00700', 'hk1810'
-    
+
     Args:
         stock_code: 股票代码
-        
+
     Returns:
         True 表示是港股代码，False 表示不是港股代码
     """
@@ -236,6 +236,38 @@ def _is_hk_code(stock_code: str) -> bool:
         return numeric_part.isdigit() and 1 <= len(numeric_part) <= 5
     # 无前缀时，5位纯数字才视为港股（避免误判 A 股代码）
     return code.isdigit() and len(code) == 5
+
+
+def _is_us_code(stock_code: str) -> bool:
+    """
+    判断代码是否为美股
+
+    美股代码规则：
+    - 1-5个大写字母，如 'AAPL' (苹果), 'TSLA' (特斯拉)
+    - 可能包含 '.' 用于特殊股票类别，如 'BRK.B' (伯克希尔B类股)
+
+    Args:
+        stock_code: 股票代码
+
+    Returns:
+        True 表示是美股代码，False 表示不是美股代码
+
+    Examples:
+        >>> _is_us_code('AAPL')
+        True
+        >>> _is_us_code('TSLA')
+        True
+        >>> _is_us_code('BRK.B')
+        True
+        >>> _is_us_code('600519')
+        False
+        >>> _is_us_code('hk00700')
+        False
+    """
+    import re
+    code = stock_code.strip().upper()
+    # 美股：1-5个大写字母，可能包含一个点和字母（如 BRK.B）
+    return bool(re.match(r'^[A-Z]{1,5}(\.[A-Z])?$', code))
 
 
 class AkshareFetcher(BaseFetcher):
@@ -552,19 +584,25 @@ class AkshareFetcher(BaseFetcher):
     def get_realtime_quote(self, stock_code: str) -> Optional[RealtimeQuote]:
         """
         获取实时行情数据
-        
+
         根据代码类型自动选择数据源：
         - 普通股票：ak.stock_zh_a_spot_em()
         - ETF 基金：ak.fund_etf_spot_em()
-        
+        - 港股：ak.stock_hk_spot_em()
+        - 美股：不支持，返回 None（由 YfinanceFetcher 处理）
+
         Args:
             stock_code: 股票/ETF代码
-            
+
         Returns:
             RealtimeQuote 对象，获取失败返回 None
         """
         # 根据代码类型选择不同的获取方法
-        if _is_hk_code(stock_code):
+        if _is_us_code(stock_code):
+            # 美股不使用 Akshare，由 YfinanceFetcher 处理
+            logger.debug(f"[API跳过] {stock_code} 是美股，Akshare 不支持美股实时行情")
+            return None
+        elif _is_hk_code(stock_code):
             return self._get_hk_realtime_quote(stock_code)
         elif _is_etf_code(stock_code):
             return self._get_etf_realtime_quote(stock_code)
@@ -856,7 +894,12 @@ class AkshareFetcher(BaseFetcher):
             ChipDistribution 对象（最新一天的数据），获取失败返回 None
         """
         import akshare as ak
-        
+
+        # 美股没有筹码分布数据（Akshare 不支持）
+        if _is_us_code(stock_code):
+            logger.debug(f"[API跳过] {stock_code} 是美股，无筹码分布数据")
+            return None
+
         # ETF/指数没有筹码分布数据
         if _is_etf_code(stock_code):
             logger.debug(f"[API跳过] {stock_code} 是 ETF/指数，无筹码分布数据")

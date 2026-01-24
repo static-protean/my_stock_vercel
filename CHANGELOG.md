@@ -7,6 +7,31 @@
 
 ## [Unreleased]
 
+### 新增
+- 🇺🇸 美股支持 ([#18](https://github.com/ZhuLinsen/daily_stock_analysis/issues/18))
+  - 支持 1-5 个大写字母的美股代码（如 `AAPL`, `TSLA`, `GOOGL`）
+  - 支持特殊股票类别（如 `BRK.B`）
+  - 基于 YfinanceFetcher 获取数据（Yahoo Finance）
+  - WebUI、Bot命令、API接口全面适配
+- 📄 国际化文档
+  - 新增英文版 README ([README_EN.md](./README_EN.md))
+  - 支持中英双语文档切换
+- 📲 PushPlus 推送支持（[#38](https://github.com/ZhuLinsen/daily_stock_analysis/issues/38)）
+  - 支持国内 PushPlus 推送服务
+  - 通过 `PUSHPLUS_TOKEN` 配置
+- 📊 通知格式优化（[#112](https://github.com/ZhuLinsen/daily_stock_analysis/issues/112)）
+  - 在通知开头添加所有股票的评分摘要
+  - 便于快速查看整体分析结果
+- ⏱️ 分析间隔配置（[#128](https://github.com/ZhuLinsen/daily_stock_analysis/issues/128)）
+  - 新增 `ANALYSIS_DELAY` 环境变量
+  - 在个股之间添加延迟（避免并发触发API限流）
+  - 在个股分析和大盘分析之间添加延迟
+  - 完全解决 Gemini API 429错误问题
+- 📄 报告类型配置（[#119](https://github.com/ZhuLinsen/daily_stock_analysis/issues/119)）
+  - 新增 `REPORT_TYPE` 环境变量（simple/full）
+  - 修复 Docker 环境下单股推送不完整的问题
+  - 支持选择精简版或完整版报告
+
 ### 计划中
 - Web 管理界面
 

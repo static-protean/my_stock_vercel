@@ -130,8 +130,6 @@ class NotificationService:
 
         # 微信消息类型配置
         self._wechat_msg_type = getattr(config, 'wechat_msg_type', 'markdown')
-        logger.info(f"企业微信消息类型: {self._wechat_msg_type}")
-        logger.info(f"config: {config}")
         # Telegram 配置
         self._telegram_config = {
             'bot_token': getattr(config, 'telegram_bot_token', None),
@@ -1346,7 +1344,6 @@ class NotificationService:
     def _send_wechat_message(self, content: str) -> bool:
         """发送企业微信消息"""
         payload = self._gen_wechat_payload(content)
-        logger.info(f"企业微信消息 payload: {payload}")
         
         response = requests.post(
             self._wechat_url,

@@ -94,6 +94,7 @@ jobs:
           LOG_LEVEL: INFO
           DATA_DAYS: 60
           MAX_CONCURRENT: 3
+          WECHAT_MSG_TYPE: ${{ vars.WECHAT_MSG_TYPE || secrets.WECHAT_MSG_TYPE || 'markdown' }}
         run: |
           # 判断运行模式
           MODE="${{ github.event.inputs.mode || 'full' }}"

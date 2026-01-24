@@ -922,7 +922,7 @@ def render_config_page(
           <input 
               type="text" 
               id="analysis_code" 
-              placeholder="A股 600519 / 港股 hk00700"
+              placeholder="A股 600519 / 港股 hk00700 / 美股 AAPL"
               maxlength="8"
               autocomplete="off"
           />

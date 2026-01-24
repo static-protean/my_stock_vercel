@@ -47,6 +47,7 @@ from data_provider import DataFetcherManager
 from data_provider.akshare_fetcher import AkshareFetcher, RealtimeQuote, ChipDistribution
 from analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
 from notification import NotificationService, NotificationChannel, send_daily_report
+from bot.models import BotMessage
 from search_service import SearchService, SearchResponse
 from enums import ReportType
 from stock_analyzer import StockTrendAnalyzer, TrendAnalysisResult
@@ -135,7 +136,8 @@ class StockAnalysisPipeline:
     def __init__(
         self,
         config: Optional[Config] = None,
-        max_workers: Optional[int] = None
+        max_workers: Optional[int] = None,
+        source_message: Optional[BotMessage] = None
     ):
         """
         初始化调度器
@@ -146,6 +148,7 @@ class StockAnalysisPipeline:
         """
         self.config = config or get_config()
         self.max_workers = max_workers or self.config.max_workers
+        self.source_message = source_message
         
         # 初始化各模块
         self.db = get_db()
@@ -153,7 +156,7 @@ class StockAnalysisPipeline:
         self.akshare_fetcher = AkshareFetcher()  # 用于获取增强数据（量比、筹码等）
         self.trend_analyzer = StockTrendAnalyzer()  # 趋势分析器
         self.analyzer = GeminiAnalyzer()
-        self.notifier = NotificationService()
+        self.notifier = NotificationService(source_message=source_message)
         
         # 初始化搜索服务
         self.search_service = SearchService(
@@ -424,29 +427,29 @@ class StockAnalysisPipeline:
             return "巨量"
     
     def process_single_stock(
-        self, 
-        code: str, 
+        self,
+        code: str,
         skip_analysis: bool = False,
         single_stock_notify: bool = False,
         report_type: ReportType = ReportType.SIMPLE
     ) -> Optional[AnalysisResult]:
         """
         处理单只股票的完整流程
-        
+
         包括：
         1. 获取数据
         2. 保存数据
         3. AI 分析
         4. 单股推送（可选，#55）
-        
+
         此方法会被线程池调用，需要处理好异常
-        
+
         Args:
             code: 股票代码
             skip_analysis: 是否跳过 AI 分析
             single_stock_notify: 是否启用单股推送模式（每分析完一只立即推送）
-            report_type: 报告类型枚举
-            
+            report_type: 报告类型枚举（从配置读取，Issue #119）
+
         Returns:
             AnalysisResult 或 None
         """
@@ -540,8 +543,14 @@ class StockAnalysisPipeline:
         
         # 单股推送模式（#55）：从配置读取
         single_stock_notify = getattr(self.config, 'single_stock_notify', False)
+        # Issue #119: 从配置读取报告类型
+        report_type_str = getattr(self.config, 'report_type', 'simple').lower()
+        report_type = ReportType.FULL if report_type_str == 'full' else ReportType.SIMPLE
+        # Issue #128: 从配置读取分析间隔
+        analysis_delay = getattr(self.config, 'analysis_delay', 0)
+
         if single_stock_notify:
-            logger.info("已启用单股推送模式：每分析完一只股票立即推送")
+            logger.info(f"已启用单股推送模式：每分析完一只股票立即推送（报告类型: {report_type_str}）")
         
         results: List[AnalysisResult] = []
         
@@ -551,21 +560,29 @@ class StockAnalysisPipeline:
             # 提交任务
             future_to_code = {
                 executor.submit(
-                    self.process_single_stock, 
-                    code, 
+                    self.process_single_stock,
+                    code,
                     skip_analysis=dry_run,
-                    single_stock_notify=single_stock_notify and send_notification
+                    single_stock_notify=single_stock_notify and send_notification,
+                    report_type=report_type  # Issue #119: 传递报告类型
                 ): code
                 for code in stock_codes
             }
             
             # 收集结果
-            for future in as_completed(future_to_code):
+            for idx, future in enumerate(as_completed(future_to_code)):
                 code = future_to_code[future]
                 try:
                     result = future.result()
                     if result:
                         results.append(result)
+
+                    # Issue #128: 个股之间添加延迟，避免API限流
+                    # 在非最后一只股票完成后添加延迟
+                    if idx < len(stock_codes) - 1 and analysis_delay > 0:
+                        logger.debug(f"等待 {analysis_delay} 秒后继续下一只股票...")
+                        time.sleep(analysis_delay)
+
                 except Exception as e:
                     logger.error(f"[{code}] 任务执行失败: {e}")
         
@@ -622,6 +639,7 @@ class StockAnalysisPipeline:
             # 推送通知
             if self.notifier.is_available():
                 channels = self.notifier.get_available_channels()
+                context_success = self.notifier.send_to_context(report)
 
                 # 企业微信：只发精简版（平台限制）
                 wechat_success = False
@@ -647,7 +665,7 @@ class StockAnalysisPipeline:
                     else:
                         logger.warning(f"未知通知渠道: {channel}")
 
-                success = wechat_success or non_wechat_success
+                success = wechat_success or non_wechat_success or context_success
                 if success:
                     logger.info("决策仪表盘推送成功")
                 else:
@@ -826,7 +844,13 @@ def run_full_analysis(
             dry_run=args.dry_run,
             send_notification=not args.no_notify
         )
-        
+
+        # Issue #128: 分析间隔 - 在个股分析和大盘分析之间添加延迟
+        analysis_delay = getattr(config, 'analysis_delay', 0)
+        if analysis_delay > 0 and config.market_review_enabled and not args.no_market_review:
+            logger.info(f"等待 {analysis_delay} 秒后执行大盘复盘（避免API限流）...")
+            time.sleep(analysis_delay)
+
         # 2. 运行大盘复盘（如果启用且不是仅个股模式）
         market_report = ""
         if config.market_review_enabled and not args.no_market_review:
@@ -889,6 +913,39 @@ def run_full_analysis(
         logger.exception(f"分析流程执行失败: {e}")
 
 
+def start_bot_stream_clients(config: Config) -> None:
+    """Start bot stream clients when enabled in config."""
+    # 启动钉钉 Stream 客户端
+    if config.dingtalk_stream_enabled:
+        try:
+            from bot.platforms import start_dingtalk_stream_background, DINGTALK_STREAM_AVAILABLE
+            if DINGTALK_STREAM_AVAILABLE:
+                if start_dingtalk_stream_background():
+                    logger.info("[Main] Dingtalk Stream client started in background.")
+                else:
+                    logger.warning("[Main] Dingtalk Stream client failed to start.")
+            else:
+                logger.warning("[Main] Dingtalk Stream enabled but SDK is missing.")
+                logger.warning("[Main] Run: pip install dingtalk-stream")
+        except Exception as exc:
+            logger.error(f"[Main] Failed to start Dingtalk Stream client: {exc}")
+
+    # 启动飞书 Stream 客户端
+    if getattr(config, 'feishu_stream_enabled', False):
+        try:
+            from bot.platforms import start_feishu_stream_background, FEISHU_SDK_AVAILABLE
+            if FEISHU_SDK_AVAILABLE:
+                if start_feishu_stream_background():
+                    logger.info("[Main] Feishu Stream client started in background.")
+                else:
+                    logger.warning("[Main] Feishu Stream client failed to start.")
+            else:
+                logger.warning("[Main] Feishu Stream enabled but SDK is missing.")
+                logger.warning("[Main] Run: pip install lark-oapi")
+        except Exception as exc:
+            logger.error(f"[Main] Failed to start Feishu Stream client: {exc}")
+
+
 def main() -> int:
     """
     主入口函数
@@ -929,6 +986,7 @@ def main() -> int:
         try:
             from webui import run_server_in_thread
             run_server_in_thread(host=config.webui_host, port=config.webui_port)
+            start_bot_stream_clients(config)
         except Exception as e:
             logger.error(f"启动 WebUI 失败: {e}")
     

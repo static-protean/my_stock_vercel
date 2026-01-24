@@ -1325,9 +1325,9 @@ class NotificationService:
                 truncated = truncated[:-1]
         return ""
     
-    def _gen_wechat_payload(self, content: str, msg_type: str) -> dict:
+    def _gen_wechat_payload(self, content: str) -> dict:
         """生成企业微信消息 payload"""
-        if msg_type == 'text':
+        if self._wechat_msg_type == 'text':
             return {
                 "msgtype": "text",
                 "text": {
@@ -1344,7 +1344,8 @@ class NotificationService:
 
     def _send_wechat_message(self, content: str) -> bool:
         """发送企业微信消息"""
-        payload = self._gen_wechat_payload(content, self._wechat_msg_type)
+        payload = self._gen_wechat_payload(content)
+        logger.info(f"企业微信消息 payload: {payload}")
         
         response = requests.post(
             self._wechat_url,

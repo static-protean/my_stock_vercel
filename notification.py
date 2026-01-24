@@ -19,14 +19,22 @@ import logging
 import json
 import smtplib
 import re
+import asyncio
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from enum import Enum
 
 import requests
+try:
+    import discord
+    from discord.ext import commands
+    from discord import app_commands
+    discord_available = True
+except ImportError:
+    discord_available = False
 
 from config import get_config
 from analyzer import AnalysisResult
@@ -146,9 +154,24 @@ class NotificationService:
         self._custom_webhook_urls = getattr(config, 'custom_webhook_urls', []) or []
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
         
+        # Discord 配置
+        self._discord_config = {
+            'bot_token': getattr(config, 'discord_bot_token', None),
+            'channel_id': getattr(config, 'discord_main_channel_id', None),
+            'webhook_url': getattr(config, 'discord_webhook_url', None),
+        }
+        
         # 消息长度限制（字节）
         self._feishu_max_bytes = getattr(config, 'feishu_max_bytes', 20000)
         self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', 4000)
+        
+        # Discord 机器人相关
+        self._discord_bot = None
+        self._discord_bot_task = None
+        
+        # 初始化Discord机器人（如果配置完整）
+        if discord_available and self._is_discord_bot_configured():
+            self._init_discord_bot()
         
         # 检测所有已配置的渠道
         self._available_channels = self._detect_all_channels()
@@ -192,6 +215,10 @@ class NotificationService:
         if self._custom_webhook_urls:
             channels.append(NotificationChannel.CUSTOM)
         
+        # Discord
+        if self._is_discord_configured():
+            channels.append(NotificationChannel.DISCORD)
+        
         return channels
     
     def _is_telegram_configured(self) -> bool:
@@ -206,6 +233,17 @@ class NotificationService:
         """检查 Pushover 配置是否完整"""
         return bool(self._pushover_config['user_key'] and self._pushover_config['api_token'])
     
+    def _is_discord_configured(self) -> bool:
+        """检查 Discord 配置是否完整（支持 Bot 或 Webhook）"""
+        return bool(
+            self._discord_config['webhook_url'] or 
+            (self._discord_config['bot_token'] and self._discord_config['channel_id'])
+        )
+    
+    def _is_discord_bot_configured(self) -> bool:
+        """检查 Discord 机器人配置是否完整"""
+        return bool(self._discord_config['bot_token']) and discord_available
+    
     def is_available(self) -> bool:
         """检查通知服务是否可用（至少有一个渠道）"""
         return len(self._available_channels) > 0
@@ -213,6 +251,206 @@ class NotificationService:
     def get_available_channels(self) -> List[NotificationChannel]:
         """获取所有已配置的渠道"""
         return self._available_channels
+    
+    def _init_discord_bot(self):
+        """初始化Discord机器人"""
+        if not discord_available:
+            logger.warning("Discord.py库未安装，无法初始化Discord机器人")
+            return
+        
+        try:
+            # 创建Discord机器人实例
+            intents = discord.Intents.default()
+            intents.message_content = True
+            
+            self._discord_bot = commands.Bot(
+                command_prefix='!',
+                intents=intents,
+                description='A股自选股智能分析机器人'
+            )
+            
+            # 添加事件处理
+            @self._discord_bot.event
+            async def on_ready():
+                logger.info(f"Discord机器人已上线：{self._discord_bot.user.name} ({self._discord_bot.user.id})")
+                logger.info(f"已连接到 {len(self._discord_bot.guilds)} 个服务器")
+            
+            # 添加命令
+            self._add_discord_commands()
+            
+            # 启动机器人（异步）
+            self._discord_bot_task = asyncio.create_task(
+                self._discord_bot.start(self._discord_config['bot_token'])
+            )
+            
+            logger.info("Discord机器人初始化成功")
+        except Exception as e:
+            logger.error(f"Discord机器人初始化失败：{e}", exc_info=True)
+    
+    def _add_discord_commands(self):
+        """添加Discord机器人命令"""
+        if not self._discord_bot:
+            return
+        
+        # 添加slash命令树
+        @self._discord_bot.tree.command(
+            name="analyze",
+            description="分析指定股票代码"
+        )
+        async def analyze(
+            interaction: discord.Interaction,
+            stock_code: str,
+            full_report: bool = False
+        ):
+            """分析指定股票代码"""
+            await self._handle_discord_analyze_command(interaction, stock_code, full_report)
+        
+        @self._discord_bot.tree.command(
+            name="market_review",
+            description="获取大盘复盘"
+        )
+        async def market_review(interaction: discord.Interaction):
+            """获取大盘复盘"""
+            await self._handle_discord_market_review_command(interaction)
+        
+        @self._discord_bot.tree.command(
+            name="help",
+            description="查看帮助信息"
+        )
+        async def help_command(interaction: discord.Interaction):
+            """查看帮助信息"""
+            await self._handle_discord_help_command(interaction)
+    
+    async def _handle_discord_analyze_command(self, interaction: discord.Interaction, stock_code: str, full_report: bool = False):
+        """处理Discord分析命令"""
+        await interaction.response.defer(ephemeral=False)
+        
+        try:
+            # 格式化股票代码
+            stock_code = stock_code.strip()
+            
+            # 发送分析开始消息
+            await interaction.followup.send(
+                f"🔄 正在分析股票：{stock_code}...",
+                ephemeral=False
+            )
+            
+            # 导入分析模块（避免循环导入）
+            from main import run_full_analysis
+            import argparse
+            from config import Config
+            
+            # 创建临时的命令行参数对象
+            args = argparse.Namespace(
+                debug=True,
+                dry_run=False,
+                no_notify=False,
+                single_notify=False,
+                workers=None,
+                schedule=False,
+                market_review=False,
+                no_market_review=not full_report,
+                webui=False,
+                webui_only=False,
+                stocks=None
+            )
+            
+            # 创建独立配置副本
+            bot_config = Config()
+            
+            # 运行分析
+            result = await asyncio.to_thread(
+                run_full_analysis,
+                config=bot_config,
+                args=args,
+                stock_codes=[stock_code]
+            )
+            
+            # 发送成功消息
+            await interaction.followup.send(
+                f"✅ 股票分析完成！{stock_code} 的分析报告已生成。",
+                ephemeral=False
+            )
+            
+        except ValueError as e:
+            await interaction.followup.send(f"❌ 输入错误：{str(e)}", ephemeral=False)
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ 执行命令过程中发生错误：{str(e)}",
+                ephemeral=False
+            )
+            logger.error(f"Discord命令执行异常：{e}", exc_info=True)
+    
+    async def _handle_discord_market_review_command(self, interaction: discord.Interaction):
+        """处理Discord大盘复盘命令"""
+        await interaction.response.defer(ephemeral=False)
+        
+        try:
+            # 发送复盘开始消息
+            await interaction.followup.send(
+                "🔄 正在生成大盘复盘报告...",
+                ephemeral=False
+            )
+            
+            # 导入分析模块（避免循环导入）
+            from main import run_market_review
+            
+            # 运行大盘复盘
+            result = await asyncio.to_thread(
+                run_market_review,
+                notifier=self,
+                analyzer=None,
+                search_service=None
+            )
+            
+            if result:
+                await interaction.followup.send(
+                    "✅ 大盘复盘完成！报告已生成。",
+                    ephemeral=False
+                )
+            else:
+                await interaction.followup.send(
+                    "❌ 大盘复盘失败，请确保相关服务已配置。",
+                    ephemeral=False
+                )
+        except Exception as e:
+            await interaction.followup.send(
+                f"❌ 执行命令过程中发生错误：{str(e)}",
+                ephemeral=False
+            )
+            logger.error(f"Discord命令执行异常：{e}", exc_info=True)
+    
+    async def _handle_discord_help_command(self, interaction: discord.Interaction):
+        """处理Discord帮助命令"""
+        help_message = f"""
+📊 **A股智能分析机器人帮助**
+
+### 支持的命令：
+
+1. `/analyze <stock_code> [full_report]`
+   - 分析指定股票代码
+   - `stock_code`: 股票代码，如 600519
+   - `full_report`: 可选，是否生成完整报告（包含大盘）
+
+2. `/market_review`
+   - 获取大盘复盘报告
+
+3. `/help`
+   - 查看此帮助信息
+
+### 示例：
+- `/analyze 600519` - 分析贵州茅台
+- `/analyze 300750 true` - 生成宁德时代的完整报告
+- `/market_review` - 获取大盘复盘
+
+📈 数据来源：Tushare、Efinance
+🤖 AI分析：Gemini
+"""
+        
+        await interaction.response.send_message(
+            help_message,
+            ephemeral=False
+        )
     
     def get_channel_names(self) -> str:
         """获取所有已配置渠道的名称"""
@@ -1757,6 +1995,95 @@ class NotificationService:
             logger.error(f"发送 Telegram 消息失败: {e}")
             import traceback
             logger.debug(traceback.format_exc())
+            return False
+    
+    def send_to_discord(self, content: str) -> bool:
+        """
+        推送消息到 Discord（支持 Webhook 和 Bot API）
+        
+        Args:
+            content: Markdown 格式的消息内容
+            
+        Returns:
+            是否发送成功
+        """
+        # 优先使用 Webhook（配置简单，权限低）
+        if self._discord_config['webhook_url']:
+            return self._send_discord_webhook(content)
+        
+        # 其次使用 Bot API（权限高，需要 channel_id）
+        if self._discord_config['bot_token'] and self._discord_config['channel_id']:
+            return self._send_discord_bot(content)
+        
+        logger.warning("Discord 配置不完整，跳过推送")
+        return False
+    
+    def _send_discord_webhook(self, content: str) -> bool:
+        """
+        使用 Webhook 发送消息到 Discord
+        
+        Discord Webhook 支持 Markdown 格式
+        
+        Args:
+            content: Markdown 格式的消息内容
+            
+        Returns:
+            是否发送成功
+        """
+        try:
+            payload = {
+                'content': content,
+                'username': 'A股分析机器人',
+                'avatar_url': 'https://picsum.photos/200'
+            }
+            
+            response = requests.post(
+                self._discord_config['webhook_url'],
+                json=payload,
+                timeout=10
+            )
+            
+            if response.status_code in [200, 204]:
+                logger.info("Discord Webhook 消息发送成功")
+                return True
+            else:
+                logger.error(f"Discord Webhook 发送失败: {response.status_code} {response.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Discord Webhook 发送异常: {e}")
+            return False
+    
+    def _send_discord_bot(self, content: str) -> bool:
+        """
+        使用 Bot API 发送消息到 Discord
+        
+        Args:
+            content: Markdown 格式的消息内容
+            
+        Returns:
+            是否发送成功
+        """
+        try:
+            headers = {
+                'Authorization': f'Bot {self._discord_config["bot_token"]}',
+                'Content-Type': 'application/json'
+            }
+            
+            payload = {
+                'content': content
+            }
+            
+            url = f'https://discord.com/api/v10/channels/{self._discord_config["channel_id"]}/messages'
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                logger.info("Discord Bot 消息发送成功")
+                return True
+            else:
+                logger.error(f"Discord Bot 发送失败: {response.status_code} {response.text}")
+                return False
+        except Exception as e:
+            logger.error(f"Discord Bot 发送异常: {e}")
             return False
     
     def _send_telegram_message(self, api_url: str, chat_id: str, text: str) -> bool:

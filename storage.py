@@ -174,7 +174,7 @@ class DatabaseManager:
         logger.info(f"数据库初始化完成: {db_url}")
 
         # 注册退出钩子，确保程序退出时关闭数据库连接
-        atexit.register(cls._cleanup_engine, self._engine)
+        atexit.register(DatabaseManager._cleanup_engine, self._engine)
     
     @classmethod
     def get_instance(cls) -> 'DatabaseManager':

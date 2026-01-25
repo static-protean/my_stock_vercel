@@ -31,8 +31,6 @@ from enum import Enum
 import requests
 try:
     import discord
-    from discord.ext import commands
-    from discord import app_commands
     discord_available = True
 except ImportError:
     discord_available = False

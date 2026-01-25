@@ -28,6 +28,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 import pandas as pd
+import requests  # 引入 requests 以捕获异常
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -196,9 +197,15 @@ class EfinanceFetcher(BaseFetcher):
         self._last_request_time = time.time()
     
     @retry(
-        stop=stop_after_attempt(3),  # 最多重试3次
-        wait=wait_exponential(multiplier=1, min=2, max=30),  # 指数退避：2, 4, 8... 最大30秒
-        retry=retry_if_exception_type((ConnectionError, TimeoutError)),
+        stop=stop_after_attempt(5),  # 增加到5次
+        wait=wait_exponential(multiplier=1, min=4, max=60),  # 增加等待时间：4, 8, 16...
+        retry=retry_if_exception_type((
+            ConnectionError,
+            TimeoutError,
+            requests.exceptions.RequestException,
+            requests.exceptions.ConnectionError,
+            requests.exceptions.ChunkedEncodingError
+        )),
         before_sleep=before_sleep_log(logger, logging.WARNING),
     )
     def _fetch_raw_data(self, stock_code: str, start_date: str, end_date: str) -> pd.DataFrame:

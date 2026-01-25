@@ -5,35 +5,29 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [2.1.0] - 2026-01-25
 
-### 新增
-- 🇺🇸 美股支持 ([#18](https://github.com/ZhuLinsen/daily_stock_analysis/issues/18))
-  - 支持 1-5 个大写字母的美股代码（如 `AAPL`, `TSLA`, `GOOGL`）
-  - 支持特殊股票类别（如 `BRK.B`）
-  - 基于 YfinanceFetcher 获取数据（Yahoo Finance）
-  - WebUI、Bot命令、API接口全面适配
-- 📄 国际化文档
-  - 新增英文版 README ([README_EN.md](./README_EN.md))
-  - 支持中英双语文档切换
-- 📲 PushPlus 推送支持（[#38](https://github.com/ZhuLinsen/daily_stock_analysis/issues/38)）
-  - 支持国内 PushPlus 推送服务
-  - 通过 `PUSHPLUS_TOKEN` 配置
-- 📊 通知格式优化（[#112](https://github.com/ZhuLinsen/daily_stock_analysis/issues/112)）
-  - 在通知开头添加所有股票的评分摘要
-  - 便于快速查看整体分析结果
-- ⏱️ 分析间隔配置（[#128](https://github.com/ZhuLinsen/daily_stock_analysis/issues/128)）
-  - 新增 `ANALYSIS_DELAY` 环境变量
-  - 在个股之间添加延迟（避免并发触发API限流）
-  - 在个股分析和大盘分析之间添加延迟
-  - 完全解决 Gemini API 429错误问题
-- 📄 报告类型配置（[#119](https://github.com/ZhuLinsen/daily_stock_analysis/issues/119)）
-  - 新增 `REPORT_TYPE` 环境变量（simple/full）
-  - 修复 Docker 环境下单股推送不完整的问题
-  - 支持选择精简版或完整版报告
+### 重构
+- 🏗️ **项目结构优化**
+  - 核心代码移至 `src/` 目录，根目录更清爽
+  - 文档移至 `docs/` 目录
+  - Docker 配置移至 `docker/` 目录
+  - 修复所有 import 路径，保持向后兼容
 
-### 计划中
-- Web 管理界面
+### 修复
+- 🌐 **网络代理智能分流**
+  - 自动检测代理配置，对国内行情接口（东方财富/Tushare）强制直连
+  - 彻底解决 "Gemini 需要代理" vs "行情接口不能走代理" 的冲突
+- 🛡️ **数据源稳定性增强**
+  - 修复 EfinanceFetcher 偶发的 `ProtocolError` (RemoteDisconnected)
+  - 增加对底层网络错误的捕获和重试机制
+- 🐛 **配置加载修复**
+  - 修复重构后 `.env` 文件读取路径错误的问题
+- 👷 **CI/CD 修复**
+  - 修复 GitHub Actions 中路径引用的错误
+
+## [2.0.0] - 2026-01-20
+（此处为 v2.0.0 的历史记录，保持不变）
 
 ## [1.6.0] - 2026-01-19
 

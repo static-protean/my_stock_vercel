@@ -81,7 +81,7 @@ check_deps() {
 test_market() {
     header "测试场景: 大盘复盘"
     info "运行大盘复盘分析..."
-    python3 main.py --market-review --no-notify
+    python3 main.py --market-review
     success "大盘复盘测试完成"
 }
 
@@ -89,7 +89,7 @@ test_market() {
 test_a_stock() {
     header "测试场景: A股分析"
     info "分析A股: 600519(茅台), 000001(平安银行)"
-    python3 main.py --stocks 600519,000001 --no-notify --no-market-review
+    python3 main.py --stocks 600519,000001  --no-market-review
     success "A股分析测试完成"
 }
 
@@ -97,7 +97,7 @@ test_a_stock() {
 test_hk_stock() {
     header "测试场景: 港股分析"
     info "分析港股: hk00700(腾讯), hk09988(阿里)"
-    python3 main.py --stocks hk00700,hk09988 --no-notify --no-market-review
+    python3 main.py --stocks hk00700,hk09988 --no-market-review
     success "港股分析测试完成"
 }
 
@@ -114,7 +114,7 @@ test_us_stock() {
 test_mixed() {
     header "测试场景: 混合市场分析"
     info "分析混合市场: 600519(A股), hk00700(港股), AAPL(美股)"
-    python3 main.py --stocks 600519,hk00700,AAPL --no-notify --no-market-review
+    python3 main.py --stocks 600519,hk00700,AAPL --no-market-review
     success "混合市场测试完成"
 }
 
@@ -122,7 +122,7 @@ test_mixed() {
 test_single() {
     header "测试场景: 单股推送模式"
     info "测试单股推送模式..."
-    python3 main.py --stocks 600519 --single-notify --no-notify --no-market-review
+    python3 main.py --stocks 600519 --single-notify --no-market-review
     success "单股推送模式测试完成"
 }
 
@@ -146,7 +146,7 @@ test_full() {
 test_quick() {
     header "测试场景: 快速测试"
     info "单只股票快速测试..."
-    python3 main.py --stocks 600519 --no-notify --no-market-review
+    python3 main.py --stocks 600519 --no-market-review
     success "快速测试完成"
 }
 
@@ -236,7 +236,7 @@ test_syntax() {
     header "测试场景: Python 语法检查"
     info "检查所有Python文件语法..."
 
-    python3 -m py_compile main.py config.py notification.py \
+    python3 -m py_compile main.py src/config.py src/notification.py \
         data_provider/akshare_fetcher.py \
         data_provider/yfinance_fetcher.py \
         web/handlers.py \
@@ -251,7 +251,7 @@ test_flake8() {
     info "运行 Flake8 检查严重错误..."
 
     if command -v flake8 &> /dev/null; then
-        flake8 main.py config.py notification.py --select=F821,E999 --max-line-length=120
+        flake8 main.py src/config.py src/notification.py --select=F821,E999 --max-line-length=120
         success "Flake8 检查通过"
     else
         warn "Flake8 未安装，跳过检查"

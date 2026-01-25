@@ -77,7 +77,7 @@ class AnalyzeCommand(BotCommand):
         try:
             # 调用分析服务
             from web.services import get_analysis_service
-            from enums import ReportType
+            from src.enums import ReportType
             
             service = get_analysis_service()
             

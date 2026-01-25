@@ -25,7 +25,7 @@ from typing import Dict, Any, TYPE_CHECKING
 
 from web.services import get_config_service, get_analysis_service
 from web.templates import render_config_page
-from enums import ReportType
+from src.enums import ReportType
 
 if TYPE_CHECKING:
     from http.server import BaseHTTPRequestHandler

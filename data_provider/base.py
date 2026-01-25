@@ -274,7 +274,7 @@ class DataFetcherManager:
         from .tushare_fetcher import TushareFetcher
         from .baostock_fetcher import BaostockFetcher
         from .yfinance_fetcher import YfinanceFetcher
-        from config import get_config
+        from src.config import get_config
 
         config = get_config()
 
@@ -386,7 +386,7 @@ class DataFetcherManager:
         Returns:
             预取的股票数量（0 表示跳过预取）
         """
-        from config import get_config
+        from src.config import get_config
         
         config = get_config()
         
@@ -458,7 +458,7 @@ class DataFetcherManager:
             UnifiedRealtimeQuote 对象，所有数据源都失败则返回 None
         """
         from .realtime_types import get_realtime_circuit_breaker
-        from config import get_config
+        from src.config import get_config
         
         config = get_config()
         
@@ -545,7 +545,7 @@ class DataFetcherManager:
             ChipDistribution 对象，失败则返回 None
         """
         from .realtime_types import get_chip_circuit_breaker
-        from config import get_config
+        from src.config import get_config
         
         config = get_config()
         

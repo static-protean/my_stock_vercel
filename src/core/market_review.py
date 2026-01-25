@@ -14,7 +14,6 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from src.config import Config
 from src.notification import NotificationService
 from src.market_analyzer import MarketAnalyzer
 from src.search_service import SearchService

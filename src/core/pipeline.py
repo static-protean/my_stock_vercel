@@ -14,17 +14,16 @@ A股自选股智能分析系统 - 核心分析流水线
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, date
-from pathlib import Path
+from datetime import date
 from typing import List, Dict, Any, Optional, Tuple
 
 from src.config import get_config, Config
-from src.storage import get_db, DatabaseManager
+from src.storage import get_db
 from data_provider import DataFetcherManager
-from data_provider.realtime_types import UnifiedRealtimeQuote, ChipDistribution
+from data_provider.realtime_types import ChipDistribution
 from src.analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
 from src.notification import NotificationService, NotificationChannel
-from src.search_service import SearchService, SearchResponse
+from src.search_service import SearchService
 from src.enums import ReportType
 from src.stock_analyzer import StockTrendAnalyzer, TrendAnalysisResult
 from bot.models import BotMessage
@@ -536,7 +535,7 @@ class StockAnalysisPipeline:
             success_count = len(results)
             fail_count = len(stock_codes) - success_count
         
-        logger.info(f"===== 分析完成 =====")
+        logger.info("===== 分析完成 =====")
         logger.info(f"成功: {success_count}, 失败: {fail_count}, 耗时: {elapsed_time:.2f} 秒")
         
         # 发送通知（单股推送模式下跳过汇总推送，避免重复）

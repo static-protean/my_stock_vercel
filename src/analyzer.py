@@ -607,13 +607,14 @@ class GeminiAnalyzer:
                     logger.info(f"[OpenAI] 第 {attempt + 1} 次重试，等待 {delay:.1f} 秒...")
                     time.sleep(delay)
                 
+                config = get_config()
                 response = self._openai_client.chat.completions.create(
                     model=self._current_model_name,
                     messages=[
                         {"role": "system", "content": self.SYSTEM_PROMPT},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=generation_config.get('temperature', 0.7),
+                    temperature=generation_config.get('temperature', config.openai_temperature),
                     max_tokens=generation_config.get('max_output_tokens', 8192),
                 )
                 
@@ -803,13 +804,14 @@ class GeminiAnalyzer:
             prompt_preview = prompt[:500] + "..." if len(prompt) > 500 else prompt
             logger.info(f"[LLM Prompt 预览]\n{prompt_preview}")
             logger.debug(f"=== 完整 Prompt ({len(prompt)}字符) ===\n{prompt}\n=== End Prompt ===")
-            
-            # 设置生成配置
+
+            # 设置生成配置（从配置文件读取温度参数）
+            config = get_config()
             generation_config = {
-                "temperature": 0.7,
+                "temperature": config.gemini_temperature,
                 "max_output_tokens": 8192,
             }
-            
+
             logger.info(f"[LLM调用] 开始调用 Gemini API (temperature={generation_config['temperature']}, max_tokens={generation_config['max_output_tokens']})...")
             
             # 使用带重试的 API 调用

@@ -45,13 +45,8 @@ from src.config import get_config, Config
 from src.storage import get_db, DatabaseManager
 from data_provider import DataFetcherManager
 from data_provider.realtime_types import UnifiedRealtimeQuote, ChipDistribution
-<<<<<<< HEAD
 from src.analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
 from src.notification import NotificationService, NotificationChannel, send_daily_report
-=======
-from src.analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
-from src.notification import NotificationService, NotificationChannel, send_daily_report
->>>>>>> upstream/main
 from bot.models import BotMessage
 from src.search_service import SearchService, SearchResponse
 from src.enums import ReportType

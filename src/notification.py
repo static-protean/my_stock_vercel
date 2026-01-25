@@ -29,8 +29,8 @@ from enum import Enum
 
 import requests
 
-from config import get_config
-from analyzer import AnalysisResult
+from src.config import get_config
+from src.analyzer import AnalysisResult
 from bot.models import BotMessage
 
 logger = logging.getLogger(__name__)
@@ -2530,7 +2530,7 @@ class NotificationService:
                 logger.warning("飞书 SDK 不可用，无法发送 Stream 回复")
                 return False
             
-            from config import get_config
+            from src.config import get_config
             config = get_config()
             
             app_id = getattr(config, 'feishu_app_id', None)

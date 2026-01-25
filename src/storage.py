@@ -39,7 +39,7 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.exc import IntegrityError
 
-from config import get_config
+from src.config import get_config
 
 logger = logging.getLogger(__name__)
 

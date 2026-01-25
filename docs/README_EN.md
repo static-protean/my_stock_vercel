@@ -8,7 +8,7 @@
 
 > 🤖 AI-powered stock analysis system for A-shares, Hong Kong stocks, and US stocks. Automatically analyzes your watchlist daily and sends "Decision Dashboard" to WeChat Work/Feishu/Telegram/Email
 
-English | [简体中文](./README.md)
+English | [简体中文](../README.md)
 
 ![Demo](./sources/all_2026-01-13_221547.gif)
 

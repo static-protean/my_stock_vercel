@@ -39,19 +39,19 @@ from datetime import datetime, date, timezone, timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
-from feishu_doc import FeishuDocManager
+from src.feishu_doc import FeishuDocManager
 
-from config import get_config, Config
-from storage import get_db, DatabaseManager
+from src.config import get_config, Config
+from src.storage import get_db, DatabaseManager
 from data_provider import DataFetcherManager
 from data_provider.realtime_types import UnifiedRealtimeQuote, ChipDistribution
-from analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
-from notification import NotificationService, NotificationChannel, send_daily_report
+from src.analyzer import GeminiAnalyzer, AnalysisResult, STOCK_NAME_MAP
+from src.notification import NotificationService, NotificationChannel, send_daily_report
 from bot.models import BotMessage
-from search_service import SearchService, SearchResponse
-from enums import ReportType
-from stock_analyzer import StockTrendAnalyzer, TrendAnalysisResult
-from market_analyzer import MarketAnalyzer
+from src.search_service import SearchService, SearchResponse
+from src.enums import ReportType
+from src.stock_analyzer import StockTrendAnalyzer, TrendAnalysisResult
+from src.market_analyzer import MarketAnalyzer
 
 # 配置日志格式
 LOG_FORMAT = '%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s'
@@ -1060,7 +1060,7 @@ def main() -> int:
             logger.info("模式: 定时任务")
             logger.info(f"每日执行时间: {config.schedule_time}")
             
-            from scheduler import run_with_schedule
+            from src.scheduler import run_with_schedule
             
             def scheduled_task():
                 run_full_analysis(config, args, stock_codes)

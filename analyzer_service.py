@@ -15,9 +15,13 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from analyzer import AnalysisResult
-from config import get_config, Config
-from notification import NotificationService
+from src.analyzer import AnalysisResult
+from src.config import get_config, Config
+from src.notification import NotificationService
+from src.enums import ReportType
+from src.core.pipeline import StockAnalysisPipeline
+from src.core.market_review import run_market_review
+
 
 
 def analyze_stock(
@@ -38,8 +42,6 @@ def analyze_stock(
     Returns:
         分析结果对象
     """
-    from main import StockAnalysisPipeline
-    
     if config is None:
         config = get_config()
     
@@ -50,11 +52,15 @@ def analyze_stock(
     if notifier:
         pipeline.notifier = notifier
     
+    # 根据full_report参数设置报告类型
+    report_type = ReportType.FULL if full_report else ReportType.SIMPLE
+    
     # 运行单只股票分析
     result = pipeline.process_single_stock(
         code=stock_code,
         skip_analysis=False,
-        single_stock_notify=notifier is not None
+        single_stock_notify=notifier is not None,
+        report_type=report_type
     )
     
     return result
@@ -102,8 +108,6 @@ def perform_market_review(
     Returns:
         复盘报告内容
     """
-    from main import run_market_review, StockAnalysisPipeline
-    
     if config is None:
         config = get_config()
     

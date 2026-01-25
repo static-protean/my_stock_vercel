@@ -250,13 +250,6 @@ class NotificationService:
         """检查 Pushover 配置是否完整"""
         return bool(self._pushover_config['user_key'] and self._pushover_config['api_token'])
     
-    def _is_discord_configured(self) -> bool:
-        """检查 Discord 配置是否完整（支持 Bot 或 Webhook）"""
-        return bool(
-            self._discord_config['webhook_url'] or 
-            (self._discord_config['bot_token'] and self._discord_config['channel_id'])
-        )
-    
     def _is_discord_bot_configured(self) -> bool:
         """检查 Discord 机器人配置是否完整"""
         return bool(self._discord_config['bot_token']) and discord_available

@@ -1176,14 +1176,24 @@ class NotificationService:
             return len(s.encode('utf-8'))
         
         # 智能分割：优先按 "---" 分隔（股票之间的分隔线）
-        # 如果没有分隔线，按 "### " 标题分割（每只股票的标题）
+        # 其次尝试各级标题分割
         if "\n---\n" in content:
             sections = content.split("\n---\n")
             separator = "\n---\n"
         elif "\n### " in content:
-            # 按 ### 分割，但保留 ### 前缀
+            # 按 ### 分割
             parts = content.split("\n### ")
             sections = [parts[0]] + [f"### {p}" for p in parts[1:]]
+            separator = "\n"
+        elif "\n## " in content:
+            # 按 ## 分割 (兼容二级标题)
+            parts = content.split("\n## ")
+            sections = [parts[0]] + [f"## {p}" for p in parts[1:]]
+            separator = "\n"
+        elif "\n**" in content:
+            # 按 ** 加粗标题分割 (兼容 AI 未输出标准 Markdown 标题的情况)
+            parts = content.split("\n**")
+            sections = [parts[0]] + [f"**{p}" for p in parts[1:]]
             separator = "\n"
         else:
             # 无法智能分割，按字符强制分割
@@ -1248,11 +1258,11 @@ class NotificationService:
                     logger.error(f"企业微信第 {i+1}/{total_chunks} 批发送失败")
             except Exception as e:
                 logger.error(f"企业微信第 {i+1}/{total_chunks} 批发送异常: {e}")
-            
+
             # 批次间隔，避免触发频率限制
             if i < total_chunks - 1:
-                time.sleep(1)
-        
+                time.sleep(2.5)  # 增加到 2.5s，避免企业微信限流
+
         return success_count == total_chunks
     
     def _send_wechat_force_chunked(self, content: str, max_bytes: int) -> bool:

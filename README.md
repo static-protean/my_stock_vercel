@@ -244,7 +244,7 @@ daily_stock_analysis/
 
 欢迎提交 Issue 和 Pull Request！
 
-详见 [贡献指南](CONTRIBUTING.md)
+详见 [贡献指南](docs/CONTRIBUTING.md)
 
 ## 📄 License
 [MIT License](LICENSE) © 2026 ZhuLinsen

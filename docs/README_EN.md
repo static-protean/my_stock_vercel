@@ -330,10 +330,10 @@ DEBUG=false                    # Enable debug logging
 
 ## 📖 Documentation
 
-- [Complete Configuration Guide](docs/full-guide.md)
-- [Bot Command Reference](docs/bot-command.md)
-- [Feishu Bot Setup](docs/bot/feishu-bot-config.md)
-- [DingTalk Bot Setup](docs/bot/dingding-bot-config.md)
+- [Complete Configuration Guide](full-guide.md)
+- [Bot Command Reference](bot-command.md)
+- [Feishu Bot Setup](bot/feishu-bot-config.md)
+- [DingTalk Bot Setup](bot/dingding-bot-config.md)
 
 ---
 

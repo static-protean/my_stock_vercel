@@ -17,6 +17,7 @@ EfinanceFetcher - 优先数据源 (Priority 0)
 1. 每次请求前随机休眠 1.5-3.0 秒
 2. 随机轮换 User-Agent
 3. 使用 tenacity 实现指数退避重试
+4. 熔断器机制：连续失败后自动冷却
 """
 
 import logging
@@ -36,14 +37,20 @@ from tenacity import (
 )
 
 from .base import BaseFetcher, DataFetchError, RateLimitError, STANDARD_COLUMNS
+from .realtime_types import (
+    UnifiedRealtimeQuote, RealtimeSource,
+    get_realtime_circuit_breaker,
+    safe_float, safe_int  # 使用统一的类型转换函数
+)
 
 
+# 保留旧的类型别名，用于向后兼容
 @dataclass
 class EfinanceRealtimeQuote:
     """
-    实时行情数据（来自 efinance）
+    实时行情数据（来自 efinance）- 向后兼容别名
     
-    包含当日实时交易数据和估值指标
+    新代码建议使用 UnifiedRealtimeQuote
     """
     code: str
     name: str = ""
@@ -94,10 +101,11 @@ USER_AGENTS = [
 
 
 # 缓存实时行情数据（避免重复请求）
+# TTL 设为 10 分钟 (600秒)：批量分析场景下避免重复拉取
 _realtime_cache: Dict[str, Any] = {
     'data': None,
     'timestamp': 0,
-    'ttl': 60  # 60秒缓存有效期
+    'ttl': 600  # 10分钟缓存有效期
 }
 
 
@@ -400,9 +408,16 @@ class EfinanceFetcher(BaseFetcher):
             stock_code: 股票代码
             
         Returns:
-            EfinanceRealtimeQuote 对象，获取失败返回 None
+            UnifiedRealtimeQuote 对象，获取失败返回 None
         """
         import efinance as ef
+        circuit_breaker = get_realtime_circuit_breaker()
+        source_key = "efinance"
+        
+        # 检查熔断器状态
+        if not circuit_breaker.is_available(source_key):
+            logger.warning(f"[熔断] 数据源 {source_key} 处于熔断状态，跳过")
+            return None
         
         try:
             # 检查缓存
@@ -410,8 +425,11 @@ class EfinanceFetcher(BaseFetcher):
             if (_realtime_cache['data'] is not None and 
                 current_time - _realtime_cache['timestamp'] < _realtime_cache['ttl']):
                 df = _realtime_cache['data']
-                logger.debug(f"[缓存命中] 使用缓存的实时行情数据")
+                cache_age = int(current_time - _realtime_cache['timestamp'])
+                logger.debug(f"[缓存命中] 实时行情(efinance) - 缓存年龄 {cache_age}s/{_realtime_cache['ttl']}s")
             else:
+                # 触发全量刷新
+                logger.info(f"[缓存未命中] 触发全量刷新 实时行情(efinance)")
                 # 防封禁策略
                 self._set_random_user_agent()
                 self._enforce_rate_limit()
@@ -425,10 +443,12 @@ class EfinanceFetcher(BaseFetcher):
                 
                 api_elapsed = _time.time() - api_start
                 logger.info(f"[API返回] ef.stock.get_realtime_quotes 成功: 返回 {len(df)} 只股票, 耗时 {api_elapsed:.2f}s")
+                circuit_breaker.record_success(source_key)
                 
                 # 更新缓存
                 _realtime_cache['data'] = df
                 _realtime_cache['timestamp'] = current_time
+                logger.info(f"[缓存更新] 实时行情(efinance) 缓存已刷新，TTL={_realtime_cache['ttl']}s")
             
             # 查找指定股票
             # efinance 返回的列名可能是 '股票代码' 或 'code'
@@ -440,23 +460,7 @@ class EfinanceFetcher(BaseFetcher):
             
             row = row.iloc[0]
             
-            # 安全获取字段值
-            def safe_float(val, default=0.0):
-                try:
-                    if pd.isna(val):
-                        return default
-                    return float(val)
-                except:
-                    return default
-            
-            def safe_int(val, default=0):
-                try:
-                    if pd.isna(val):
-                        return default
-                    return int(float(val))
-                except:
-                    return default
-            
+            # 使用 realtime_types.py 中的统一转换函数
             # 获取列名（可能是中文或英文）
             name_col = '股票名称' if '股票名称' in df.columns else 'name'
             price_col = '最新价' if '最新价' in df.columns else 'price'
@@ -470,9 +474,10 @@ class EfinanceFetcher(BaseFetcher):
             low_col = '最低' if '最低' in df.columns else 'low'
             open_col = '开盘' if '开盘' in df.columns else 'open'
             
-            quote = EfinanceRealtimeQuote(
+            quote = UnifiedRealtimeQuote(
                 code=stock_code,
                 name=str(row.get(name_col, '')),
+                source=RealtimeSource.EFINANCE,
                 price=safe_float(row.get(price_col)),
                 change_pct=safe_float(row.get(pct_col)),
                 change_amount=safe_float(row.get(chg_col)),
@@ -485,12 +490,13 @@ class EfinanceFetcher(BaseFetcher):
                 open_price=safe_float(row.get(open_col)),
             )
             
-            logger.info(f"[实时行情] {stock_code} {quote.name}: 价格={quote.price}, 涨跌={quote.change_pct}%, "
+            logger.info(f"[实时行情-efinance] {stock_code} {quote.name}: 价格={quote.price}, 涨跌={quote.change_pct}%, "
                        f"换手率={quote.turnover_rate}%")
             return quote
             
         except Exception as e:
-            logger.error(f"[API错误] 获取 {stock_code} 实时行情失败: {e}")
+            logger.error(f"[API错误] 获取 {stock_code} 实时行情(efinance)失败: {e}")
+            circuit_breaker.record_failure(source_key, str(e))
             return None
     
     def get_base_info(self, stock_code: str) -> Optional[Dict[str, Any]]:

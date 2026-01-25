@@ -350,8 +350,8 @@ class NotificationService:
         report_lines.extend([
             "## 📊 操作建议汇总",
             "",
-            f"| 指标 | 数值 |",
-            f"|------|------|",
+            "| 指标 | 数值 |",
+            "|------|------|",
             f"| 🟢 建议买入/加仓 | **{buy_count}** 只 |",
             f"| 🟡 建议持有/观望 | **{hold_count}** 只 |",
             f"| 🔴 建议减仓/卖出 | **{sell_count}** 只 |",
@@ -474,7 +474,7 @@ class NotificationService:
             
             # 数据来源说明
             if hasattr(result, 'search_performed') and result.search_performed:
-                report_lines.append(f"*🔍 已执行联网搜索*")
+                report_lines.append("*🔍 已执行联网搜索*")
             if hasattr(result, 'data_sources') and result.data_sources:
                 report_lines.append(f"*📋 数据来源：{result.data_sources}*")
             
@@ -3042,7 +3042,7 @@ if __name__ == "__main__":
     service = NotificationService()
     
     # 显示检测到的渠道
-    print(f"=== 通知渠道检测 ===")
+    print("=== 通知渠道检测 ===")
     print(f"当前渠道: {service.get_channel_names()}")
     print(f"渠道列表: {service.get_available_channels()}")
     print(f"服务可用: {service.is_available()}")

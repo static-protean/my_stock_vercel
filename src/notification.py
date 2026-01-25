@@ -19,15 +19,23 @@ import logging
 import json
 import smtplib
 import re
+import asyncio
 import markdown2
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from enum import Enum
 
 import requests
+try:
+    import discord
+    from discord.ext import commands
+    from discord import app_commands
+    discord_available = True
+except ImportError:
+    discord_available = False
 
 from src.config import get_config
 from src.analyzer import AnalysisResult
@@ -241,6 +249,10 @@ class NotificationService:
     def _is_pushover_configured(self) -> bool:
         """检查 Pushover 配置是否完整"""
         return bool(self._pushover_config['user_key'] and self._pushover_config['api_token'])
+    
+    def _is_discord_bot_configured(self) -> bool:
+        """检查 Discord 机器人配置是否完整"""
+        return bool(self._discord_config['bot_token']) and discord_available
     
     def is_available(self) -> bool:
         """检查通知服务是否可用（至少有一个渠道或上下文渠道）"""
@@ -747,7 +759,7 @@ class NotificationService:
                     ])
                 
                 # 检查清单
-                checklist = battle.get('action_checklist', [])
+                checklist = battle.get('action_checklist', []) if battle else []
                 if checklist:
                     report_lines.extend([
                         "**✅ 检查清单**",

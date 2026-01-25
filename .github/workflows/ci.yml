@@ -49,9 +49,9 @@ jobs:
       
       - name: 🐍 语法检查
         run: |
-          python -m py_compile main.py config.py analyzer.py notification.py
-          python -m py_compile storage.py scheduler.py search_service.py
-          python -m py_compile market_analyzer.py stock_analyzer.py
+          python -m py_compile main.py src/config.py src/analyzer.py src/notification.py
+          python -m py_compile src/storage.py src/scheduler.py src/search_service.py
+          python -m py_compile src/market_analyzer.py src/stock_analyzer.py
           python -m py_compile data_provider/*.py
           echo "✅ Python 语法检查通过"
       

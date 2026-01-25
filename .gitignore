@@ -67,6 +67,3 @@ local/
 run.sh
 
 verify_*.py
-
-# Trae IDE
-.trae/

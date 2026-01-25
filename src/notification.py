@@ -28,6 +28,11 @@ from email.header import Header
 from enum import Enum
 
 import requests
+try:
+    import discord
+    discord_available = True
+except ImportError:
+    discord_available = False
 
 from src.config import get_config
 from src.analyzer import AnalysisResult

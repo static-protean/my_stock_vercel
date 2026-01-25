@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [ main, feat/discord-bot ]
+    branches: [ main ]
     tags: [ 'v*.*.*' ]
 
 jobs:
@@ -36,8 +36,11 @@ jobs:
           images: |
             ghcr.io/${{ github.repository }}
           tags: |
+            # 标准标签
             type=raw,value=latest,enable={{ is_default_branch }}
-            type=sha,format=short,prefix=
+            type=sha,format=short
+            # Zeabur 需要的完整 SHA 标签
+            type=sha,format=long
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -46,19 +49,6 @@ jobs:
           file: docker/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and push for Zeabur
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
-            ghcr.io/${{ github.repository }}:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

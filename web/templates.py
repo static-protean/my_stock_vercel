@@ -664,11 +664,11 @@ def render_config_page(
         }
     });
     
-    // 更新按钮状态 - 支持 A股(6位数字) 或 港股(hk+5位数字)
+    // 更新按钮状态 - 支持 A股(6位数字) 或 港股(HK+5位数字)
     function updateButtonState() {
         const code = codeInput.value.trim();
         const isAStock = /^\\d{6}$/.test(code);           // A股: 600519
-        const isHKStock = /^hk\\d{5}$/.test(code);        // 港股: hk00700
+        const isHKStock = /^HK\\d{5}$/.test(code);        // 港股: HK00700
         const isUSStock =  /^[A-Z]{1,5}(\.[A-Z])?$/.test(code); // 美股: AAPL
 
         submitBtn.disabled = !(isAStock || isHKStock || isUSStock);
@@ -852,7 +852,7 @@ def render_config_page(
     window.submitAnalysis = function() {
         const code = codeInput.value.trim();
         const isAStock = /^\d{6}$/.test(code);
-        const isHKStock = /^hk\d{5}$/.test(code);
+        const isHKStock = /^HK\d{5}$/.test(code);
         const isUSStock = /^[A-Z]{1,5}(\.[A-Z])?$/.test(code);
 
         if (!(isAStock || isHKStock || isUSStock)) {

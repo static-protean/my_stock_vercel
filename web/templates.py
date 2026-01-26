@@ -646,8 +646,8 @@ def render_config_page(
     
     // 允许输入数字和字母（支持港股 hkxxxxx 格式）
     codeInput.addEventListener('input', function(e) {
-        // 转小写，只保留字母和数字
-        this.value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // 转大写，只保留字母和数字
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9.]/g, '');
         if (this.value.length > 8) {
             this.value = this.value.slice(0, 8);
         }
@@ -666,10 +666,12 @@ def render_config_page(
     
     // 更新按钮状态 - 支持 A股(6位数字) 或 港股(hk+5位数字)
     function updateButtonState() {
-        const code = codeInput.value.trim().toLowerCase();
+        const code = codeInput.value.trim();
         const isAStock = /^\\d{6}$/.test(code);           // A股: 600519
         const isHKStock = /^hk\\d{5}$/.test(code);        // 港股: hk00700
-        submitBtn.disabled = !(isAStock || isHKStock);
+        const isUSStock =  /^[A-Z]{1,5}(\.[A-Z])?$/.test(code); // 美股: AAPL
+
+        submitBtn.disabled = !(isAStock || isHKStock || isUSStock);
     }
     
     // 格式化时间
@@ -848,11 +850,12 @@ def render_config_page(
     
     // 提交分析
     window.submitAnalysis = function() {
-        const code = codeInput.value.trim().toLowerCase();
+        const code = codeInput.value.trim();
         const isAStock = /^\d{6}$/.test(code);
         const isHKStock = /^hk\d{5}$/.test(code);
-        
-        if (!(isAStock || isHKStock)) {
+        const isUSStock = /^[A-Z]{1,5}(\.[A-Z])?$/.test(code);
+
+        if (!(isAStock || isHKStock || isUSStock)) {
             return;
         }
         

@@ -46,7 +46,7 @@ vim .env  # 填入真实的 API Key 等配置
 
 ```bash
 # 构建并启动
-docker-compose up -d
+docker-compose -f ./docker/docker-compose.yml up -d
 
 # 查看日志
 docker-compose logs -f
@@ -67,7 +67,7 @@ docker-compose restart
 # 更新代码后重新部署
 git pull
 docker-compose build --no-cache
-docker-compose up -d
+docker-compose -f ./docker/docker-compose.yml up -d
 
 # 进入容器调试
 docker-compose exec stock-analyzer bash
@@ -302,7 +302,7 @@ mkdir -p /opt/stock-analyzer
 cd /opt/stock-analyzer
 git clone <your-repo-url> .
 tar -xzvf stock-analyzer-backup.tar.gz
-docker-compose up -d
+docker-compose -f ./docker/docker-compose.yml up -d
 ```
 
 ---

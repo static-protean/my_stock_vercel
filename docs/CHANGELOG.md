@@ -5,25 +5,51 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 版本号遵循 [Semantic Versioning](https://semver.org/lang/zh-CN/)。
 
-## [Unreleased]
+## [2.1.0] - 2026-01-25
 
 ### 新增
-- 📲 PushPlus 推送支持（[#38](https://github.com/ZhuLinsen/daily_stock_analysis/issues/38)）
-  - 支持国内 PushPlus 推送服务
-  - 通过 `PUSHPLUS_TOKEN` 配置
-- 📊 通知格式优化（[#112](https://github.com/ZhuLinsen/daily_stock_analysis/issues/112)）
-  - 在通知开头添加所有股票的评分摘要
-  - 便于快速查看整体分析结果
-- ⏱️ 分析间隔配置（[#128](https://github.com/ZhuLinsen/daily_stock_analysis/issues/128)）
-  - 新增 `ANALYSIS_DELAY` 环境变量
-  - 在个股分析和大盘分析之间添加延迟，避免触发 Gemini API 限流
-- 📄 报告类型配置（[#119](https://github.com/ZhuLinsen/daily_stock_analysis/issues/119)）
-  - 新增 `REPORT_TYPE` 环境变量（simple/full）
-  - 修复 Docker 环境下单股推送不完整的问题
-  - 支持选择精简版或完整版报告
+- 🇺🇸 **美股分析支持**
+  - 支持美股代码直接输入（如 `AAPL`, `TSLA`）
+  - 使用 YFinance 作为美股数据源
+- 📈 **MACD 和 RSI 技术指标**
+  - MACD：趋势确认、金叉死叉信号（零轴上金叉⭐、金叉✅、死叉❌）
+  - RSI：超买超卖判断（超卖⭐、强势✅、超买⚠️）
+  - 指标信号纳入综合评分系统
+- 🎮 **Discord 推送支持**
+  - 支持 Discord Webhook 和 Bot API 两种方式
+  - 通过 `DISCORD_WEBHOOK_URL` 或 `DISCORD_BOT_TOKEN` + `DISCORD_CHANNEL_ID` 配置
+- 🤖 **机器人命令交互**
+  - 钉钉机器人支持 `/分析 股票代码` 命令触发分析
+  - 支持 Stream 长连接模式
 
-### 计划中
-- Web 管理界面
+### 重构
+- 🏗️ **项目结构优化**
+  - 核心代码移至 `src/` 目录，根目录更清爽
+  - 文档移至 `docs/` 目录
+  - Docker 配置移至 `docker/` 目录
+  - 修复所有 import 路径，保持向后兼容
+- 🔄 **数据源架构升级**
+  - 新增数据源熔断机制，单数据源连续失败自动切换
+  - 实时行情缓存优化，批量预取减少 API 调用
+  - 网络代理智能分流，国内接口自动直连
+
+### 修复
+- 🌐 **网络稳定性增强**
+  - 自动检测代理配置，对国内行情接口强制直连
+  - 修复 EfinanceFetcher 偶发的 `ProtocolError`
+  - 增加对底层网络错误的捕获和重试机制
+- 📧 **邮件渲染优化**
+  - 修复邮件中表格不渲染问题 (#134)
+  - 优化邮件排版，更紧凑美观
+- 📢 **企业微信推送修复**
+  - 修复大盘复盘推送不完整问题
+  - 增强消息分割逻辑，支持更多标题格式
+  - 增加分批发送间隔，避免限流丢失
+- 👷 **CI/CD 修复**
+  - 修复 GitHub Actions 中路径引用的错误
+
+## [2.0.0] - 2026-01-20
+（此处为 v2.0.0 的历史记录，保持不变）
 
 ## [1.6.0] - 2026-01-19
 

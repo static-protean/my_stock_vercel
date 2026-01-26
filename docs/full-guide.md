@@ -210,7 +210,7 @@ docker-compose -f ./docker/docker-compose.yml up -d            # 同时启动两
 # http://localhost:8000
 
 # 5. 查看日志
-docker-compose logs -f webui
+docker-compose -f ./docker/docker-compose.yml logs -f webui
 ```
 
 ### 运行模式说明
@@ -260,16 +260,16 @@ services:
 
 ```bash
 # 查看运行状态
-docker-compose ps
+docker-compose -f ./docker/docker-compose.yml ps
 
 # 查看日志
-docker-compose logs -f webui
+docker-compose -f ./docker/docker-compose.yml logs -f webui
 
 # 停止服务
-docker-compose down
+docker-compose -f ./docker/docker-compose.yml down
 
 # 重建镜像（代码更新后）
-docker-compose build --no-cache
+docker-compose -f ./docker/docker-compose.yml build --no-cache
 docker-compose -f ./docker/docker-compose.yml up -d webui
 ```
 

@@ -20,9 +20,9 @@ x-common: &common
     - ../.env
 
   volumes:
-    - ./data:/app/data
-    - ./logs:/app/logs
-    - ./reports:/app/reports
+    - ../data:/app/data
+    - ../logs:/app/logs
+    - ../reports:/app/reports
     - ../.env:/app/.env
 
   environment:

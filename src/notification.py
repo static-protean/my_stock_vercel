@@ -173,7 +173,7 @@ class NotificationService:
         
         # 消息长度限制（字节）
         self._feishu_max_bytes = getattr(config, 'feishu_max_bytes', 20000)
-        self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', self._get_wechat_msg_max_bytes())
+        self._wechat_max_bytes = getattr(config, 'wechat_max_bytes', 4000)
         
         # 检测所有已配置的渠道
         self._available_channels = self._detect_all_channels()
@@ -186,15 +186,6 @@ class NotificationService:
             channel_names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
             channel_names.extend(self._context_channels)
             logger.info(f"已配置 {len(channel_names)} 个通知渠道：{', '.join(channel_names)}")
-    
-    def _get_wechat_msg_max_bytes(self) -> int:
-        """获取企业微信消息最大字节数"""
-        if self._wechat_msg_type == 'text':
-            # text 类型最大字节数为 2048
-            return 2048
-        else:
-            # markdown 类型最大字节数为 4000
-            return 4000
     
     def _detect_all_channels(self) -> List[NotificationChannel]:
         """

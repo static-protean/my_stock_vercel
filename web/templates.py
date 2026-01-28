@@ -916,7 +916,7 @@ def render_config_page(
     
     content = f"""
   <div class="container">
-    <h2>📈 A/港股/美股分析</h2>
+    <h2>📈 A股/港股/美股分析</h2>
     
     <!-- 快速分析区域 -->
     <div class="analysis-section" style="margin-top: 0; padding-top: 0; border-top: none;">

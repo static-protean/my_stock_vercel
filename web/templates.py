@@ -669,7 +669,7 @@ def render_config_page(
         const code = codeInput.value.trim();
         const isAStock = /^\\d{6}$/.test(code);           // A股: 600519
         const isHKStock = /^HK\\d{5}$/.test(code);        // 港股: HK00700
-        const isUSStock =  /^[A-Z]{1,5}(\.[A-Z])?$/.test(code); // 美股: AAPL
+        const isUSStock =  /^[A-Z]{1,5}(\.[A-Z]{1,2})?$/.test(code); // 美股: AAPL
 
         submitBtn.disabled = !(isAStock || isHKStock || isUSStock);
     }
@@ -853,7 +853,7 @@ def render_config_page(
         const code = codeInput.value.trim();
         const isAStock = /^\d{6}$/.test(code);
         const isHKStock = /^HK\d{5}$/.test(code);
-        const isUSStock = /^[A-Z]{1,5}(\.[A-Z])?$/.test(code);
+        const isUSStock = /^[A-Z]{1,5}(\.[A-Z]{1,2})?$/.test(code);
 
         if (!(isAStock || isHKStock || isUSStock)) {
             return;
@@ -861,7 +861,7 @@ def render_config_page(
         
         submitBtn.disabled = true;
         submitBtn.textContent = '提交中...';
-        
+
         const reportType = reportTypeSelect.value;
         fetch('/analysis?code=' + encodeURIComponent(code) + '&report_type=' + encodeURIComponent(reportType))
             .then(response => response.json())

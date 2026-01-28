@@ -1,3 +1,5 @@
+<div align="center">
+
 # 📈 AI Stock Analysis System
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/daily_stock_analysis?style=social)](https://github.com/ZhuLinsen/daily_stock_analysis/stargazers)
@@ -8,9 +10,11 @@
 
 > 🤖 AI-powered stock analysis system for A-shares, Hong Kong stocks, and US stocks. Automatically analyzes your watchlist daily and sends "Decision Dashboard" to WeChat Work/Feishu/Telegram/Email
 
-English | [简体中文](../README.md)
+[**Key Features**](#-key-features) • [**Deployment**](DEPLOY.md) • [**Sample Output**](#-sample-output) • [**Usage Guide**](full-guide.md) • [**Changelog**](CHANGELOG.md)
 
-![Demo](./sources/all_2026-01-13_221547.gif)
+English | [简体中文](../README.md) | [繁體中文](README_CHT.md)
+
+</div>
 
 ## ✨ Key Features
 
@@ -224,6 +228,8 @@ PUSHPLUS_TOKEN=your_token_here
 ---
 
 ## 🎨 Sample Output
+
+![Demo](../sources/all_2026-01-13_221547.gif)
 
 ### Decision Dashboard Format
 

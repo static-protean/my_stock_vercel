@@ -1,3 +1,5 @@
+<div align="center">
+
 # 📈 股票智能分析系统
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/daily_stock_analysis?style=social)](https://github.com/ZhuLinsen/daily_stock_analysis/stargazers)
@@ -8,9 +10,13 @@
 
 > 🤖 基于 AI 大模型的 A股/港股/美股自选股智能分析系统，每日自动分析并推送「决策仪表盘」到企业微信/飞书/Telegram/邮箱
 
-[English](docs/README_EN.md) | 简体中文
+[**功能特性**](#-功能特性) • [**部署指南**](docs/DEPLOY.md) • [**推送效果**](#-推送效果) • [**使用指南**](docs/full-guide.md) • [**更新日志**](docs/CHANGELOG.md)
 
-![运行效果演示](./sources/all_2026-01-13_221547.gif)
+[English](docs/README_EN.md) | 简体中文 | [繁體中文](docs/README_CHT.md)
+
+</div>
+
+
 
 ## ✨ 功能特性
 
@@ -110,6 +116,8 @@
 > 📖 本地运行、Docker 部署详细步骤请参考 [完整配置指南](docs/full-guide.md)
 
 ## 📱 推送效果
+
+![运行效果演示](./sources/all_2026-01-13_221547.gif)
 
 ### 决策仪表盘
 ```

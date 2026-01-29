@@ -37,7 +37,7 @@
 - **🔄 多模型支持** - 支持 OpenAI 兼容 API（DeepSeek、通义千问等）作为备选
 
 ### 📊 数据来源
-- **行情数据**: AkShare（免费）、Tushare、Baostock、YFinance
+- **行情数据**: AkShare（免费）、Tushare、Pytdx（通达信）、Baostock、YFinance
 - **新闻搜索**: Tavily、SerpAPI、Bocha
 - **AI 分析**: 
   - 主力：Google Gemini（gemini-3-flash-preview）—— [免费获取](https://aistudio.google.com/)
@@ -242,6 +242,7 @@ daily_stock_analysis/
 ### 📊 数据源扩展
 - [x] AkShare（免费）
 - [x] Tushare Pro
+- [x] Pytdx（通达信）
 - [x] Baostock
 - [x] YFinance
 

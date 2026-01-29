@@ -107,6 +107,58 @@ def format_feishu_markdown(content: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _chunk_by_lines(content: str, max_bytes: int, send_func: Callable[[str], bool]) -> bool:
+    """
+    强制按行分割发送（无法智能分割时的 fallback）
+    
+    Args:
+        content: 完整消息内容
+        max_bytes: 单条消息最大字节数
+        send_func: 发送单条消息的函数
+        
+    Returns:
+        是否全部发送成功
+    """
+    chunks = []
+    current_chunk = ""
+    
+    # 按行分割，确保不会在多字节字符中间截断
+    lines = content.split('\n')
+    
+    for line in lines:
+        test_chunk = current_chunk + ('\n' if current_chunk else '') + line
+        if len(test_chunk.encode('utf-8')) > max_bytes - 100:  # 预留空间给分页标记
+            if current_chunk:
+                chunks.append(current_chunk)
+            current_chunk = line
+        else:
+            current_chunk = test_chunk
+    
+    if current_chunk:
+        chunks.append(current_chunk)
+    
+    total_chunks = len(chunks)
+    success_count = 0
+    
+    for i, chunk in enumerate(chunks):
+        # 添加分页标记
+        page_marker = f"\n\n📄 ({i+1}/{total_chunks})" if total_chunks > 1 else ""
+        
+        try:
+            if send_func(chunk + page_marker):
+                success_count += 1
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"飞书第 {i+1}/{total_chunks} 批发送异常: {e}")
+        
+        # 批次间隔，避免触发频率限制
+        if i < total_chunks - 1:
+            time.sleep(1)
+    
+    return success_count == total_chunks
+
+
 def chunk_feishu_content(content: str, max_bytes: int, send_func: Callable[[str], bool]) -> bool:
     """
     将超长内容分段发送到飞书
@@ -213,53 +265,6 @@ def chunk_feishu_content(content: str, max_bytes: int, send_func: Callable[[str]
             logger.error(f"飞书第 {i+1}/{total_chunks} 批发送异常: {e}")
         
         # 批次间隔，避免触发频率限制
-        if i < total_chunks - 1:
-            time.sleep(1)
-    
-    return success_count == total_chunks
-
-
-def _chunk_by_lines(content: str, max_bytes: int, send_func: Callable[[str], bool]) -> bool:
-    """
-    强制按行分割发送（无法智能分割时的 fallback）
-    
-    Args:
-        content: 完整消息内容
-        max_bytes: 单条消息最大字节数
-        send_func: 发送单条消息的函数
-    """
-    chunks = []
-    current_chunk = ""
-    
-    # 按行分割，确保不会在多字节字符中间截断
-    lines = content.split('\n')
-    
-    for line in lines:
-        test_chunk = current_chunk + ('\n' if current_chunk else '') + line
-        if len(test_chunk.encode('utf-8')) > max_bytes - 100:  # 预留空间给分页标记
-            if current_chunk:
-                chunks.append(current_chunk)
-            current_chunk = line
-        else:
-            current_chunk = test_chunk
-    
-    if current_chunk:
-        chunks.append(current_chunk)
-    
-    total_chunks = len(chunks)
-    success_count = 0
-    
-    for i, chunk in enumerate(chunks):
-        page_marker = f"\n\n📄 ({i+1}/{total_chunks})" if total_chunks > 1 else ""
-        
-        try:
-            if send_func(chunk + page_marker):
-                success_count += 1
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"飞书第 {i+1}/{total_chunks} 批发送异常: {e}")
-        
         if i < total_chunks - 1:
             time.sleep(1)
     

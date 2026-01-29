@@ -97,6 +97,11 @@ class FeishuReplyClient:
             是否发送成功
         """
         try:
+            # 如果需要 @用户，在内容前添加 @ 标记
+            final_content = content
+            if at_user and user_id:
+                final_content = f"<at user_id=\"{user_id}\"></at> {content}"
+            
             # 构建交互卡片 payload
             card_data = {
                 "config": {"wide_screen_mode": True},
@@ -105,16 +110,11 @@ class FeishuReplyClient:
                         "tag": "div",
                         "text": {
                             "tag": "lark_md",
-                            "content": content
+                            "content": final_content
                         }
                     }
                 ]
             }
-
-            # 如果需要 @用户，在内容前添加 @ 标记
-            if at_user and user_id:
-                content = f"<at user_id=\"{user_id}\"></at> {content}"
-                card_data["elements"][0]["text"]["content"] = content
 
             content_json = json.dumps(card_data)
 

@@ -16,6 +16,15 @@ English | [简体中文](../README.md) | [繁體中文](README_CHT.md)
 
 </div>
 
+## 💖 Sponsors
+
+<div align="center">
+  <a href="https://serpapi.com/baidu-search-api?utm_source=github_daily_stock_analysis" target="_blank">
+    <img src="../sources/serpapi_banner_en.png" alt="Easily scrape real-time financial news data from search engines - SerpApi" height="160">
+  </a>
+</div>
+<br>
+
 ## ✨ Key Features
 
 ### 🎯 Core Capabilities

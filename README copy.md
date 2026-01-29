@@ -1,5 +1,3 @@
-<div align="center">
-
 # 📈 股票智能分析系统
 
 [![GitHub stars](https://img.shields.io/github/stars/ZhuLinsen/daily_stock_analysis?style=social)](https://github.com/ZhuLinsen/daily_stock_analysis/stargazers)
@@ -10,19 +8,22 @@
 
 > 🤖 基于 AI 大模型的 A股/港股/美股自选股智能分析系统，每日自动分析并推送「决策仪表盘」到企业微信/飞书/Telegram/邮箱
 
-[**功能特性**](#-功能特性) • [**部署指南**](docs/DEPLOY.md) • [**推送效果**](#-推送效果) • [**使用指南**](docs/full-guide.md) • [**更新日志**](docs/CHANGELOG.md)
+<div align="center">
 
 [English](docs/README_EN.md) | 简体中文 | [繁體中文](docs/README_CHT.md)
 
 </div>
 
-## 💖 赞助商 (Sponsors)
 <div align="center">
-  <a href="https://serpapi.com/baidu-search-api?utm_source=github_daily_stock_analysis" target="_blank">
-    <img src="./sources/serpapi_banner_zh.png" alt="轻松抓取搜索引擎上的实时金融新闻数据 - SerpApi" height="160">
+  <a href="https://serpapi.com?utm_source=github&utm_medium=banner&utm_campaign=daily_stock_analysis" target="_blank">
+    <img
+      src="https://serpapi.com/banner_image_url_placeholder"
+      alt="SerpApi – Search API for Google, Bing, and more"
+      style="max-width: 800px; width: 100%;"
+    />
   </a>
 </div>
-<br>
+
 
 
 ## ✨ 功能特性

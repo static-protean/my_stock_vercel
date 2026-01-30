@@ -182,7 +182,7 @@ class ApiHandler:
 
         if not (is_a_stock or is_hk_stock or is_us_stock):
             return JsonResponse(
-                {"success": False, "error": f"无效的股票代码格式: {code} (A股6位数字 / 港股hk+5位数字 / 美股1-5个字母)"},
+                {"success": False, "error": f"无效的股票代码格式: {code} (A股6位数字 / 港股HK+5位数字 / 美股1-5个字母)"},
                 status=HTTPStatus.BAD_REQUEST
             )
         

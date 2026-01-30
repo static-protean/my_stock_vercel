@@ -335,7 +335,7 @@ class Config:
             analysis_delay=float(os.getenv('ANALYSIS_DELAY', '0')),
             feishu_max_bytes=int(os.getenv('FEISHU_MAX_BYTES', '20000')),
             wechat_max_bytes=wechat_max_bytes,
-            wechat_msg_type=wechat_msg_type,
+            wechat_msg_type=wechat_msg_type_lower,
             database_path=os.getenv('DATABASE_PATH', './data/stock_analysis.db'),
             log_dir=os.getenv('LOG_DIR', './logs'),
             log_level=os.getenv('LOG_LEVEL', 'INFO'),

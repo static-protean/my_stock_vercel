@@ -60,7 +60,7 @@ class AnalyzeCommand(BotCommand):
         is_us_stock = re.match(r'^[A-Z]{1,5}(\.[A-Z]{1,2})?$', code)
 
         if not (is_a_stock or is_hk_stock or is_us_stock):
-            return f"无效的股票代码: {code}（A股6位数字 / 港股hk+5位数字 / 美股1-5个字母）"
+            return f"无效的股票代码: {code}（A股6位数字 / 港股HK+5位数字 / 美股1-5个字母）"
         
         return None
     

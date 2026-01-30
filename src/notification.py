@@ -36,6 +36,7 @@ except ImportError:
 
 from src.config import get_config
 from src.analyzer import AnalysisResult
+from src.formatters import format_feishu_markdown
 from bot.models import BotMessage
 
 logger = logging.getLogger(__name__)
@@ -1423,7 +1424,7 @@ class NotificationService:
             return False
         
         # 飞书 lark_md 支持有限，先做格式转换
-        formatted_content = self._format_feishu_markdown(content)
+        formatted_content = format_feishu_markdown(content)
 
         max_bytes = self._feishu_max_bytes  # 从配置读取，默认 20000 字节
         
@@ -1653,74 +1654,6 @@ class NotificationService:
 
         return _post_payload(text_payload)
 
-    def _format_feishu_markdown(self, content: str) -> str:
-        """
-        将通用 Markdown 转换为飞书 lark_md 更友好的格式
-        - 飞书不支持 Markdown 标题（# / ## / ###），用加粗代替
-        - 引用块使用前缀替代
-        - 分隔线统一为细线
-        - 表格转换为条目列表
-        """
-        def _flush_table_rows(buffer: List[str], output: List[str]) -> None:
-            if not buffer:
-                return
-
-            def _parse_row(row: str) -> List[str]:
-                cells = [c.strip() for c in row.strip().strip('|').split('|')]
-                return [c for c in cells if c]
-
-            rows = []
-            for raw in buffer:
-                if re.match(r'^\s*\|?\s*[:-]+\s*(\|\s*[:-]+\s*)+\|?\s*$', raw):
-                    continue
-                parsed = _parse_row(raw)
-                if parsed:
-                    rows.append(parsed)
-
-            if not rows:
-                return
-
-            header = rows[0]
-            data_rows = rows[1:] if len(rows) > 1 else []
-            for row in data_rows:
-                pairs = []
-                for idx, cell in enumerate(row):
-                    key = header[idx] if idx < len(header) else f"列{idx + 1}"
-                    pairs.append(f"{key}：{cell}")
-                output.append(f"• {' | '.join(pairs)}")
-
-        lines = []
-        table_buffer: List[str] = []
-
-        for raw_line in content.splitlines():
-            line = raw_line.rstrip()
-
-            if line.strip().startswith('|'):
-                table_buffer.append(line)
-                continue
-
-            if table_buffer:
-                _flush_table_rows(table_buffer, lines)
-                table_buffer = []
-
-            if re.match(r'^#{1,6}\s+', line):
-                title = re.sub(r'^#{1,6}\s+', '', line).strip()
-                line = f"**{title}**" if title else ""
-            elif line.startswith('> '):
-                quote = line[2:].strip()
-                line = f"💬 {quote}" if quote else ""
-            elif line.strip() == '---':
-                line = '────────'
-            elif line.startswith('- '):
-                line = f"• {line[2:].strip()}"
-
-            lines.append(line)
-
-        if table_buffer:
-            _flush_table_rows(table_buffer, lines)
-
-        return "\n".join(lines).strip()
-    
     def send_to_email(self, content: str, subject: Optional[str] = None) -> bool:
         """
         通过 SMTP 发送邮件（自动识别 SMTP 服务器）

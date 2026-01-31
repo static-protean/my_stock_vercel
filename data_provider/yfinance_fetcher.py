@@ -164,10 +164,20 @@ class YfinanceFetcher(BaseFetcher):
         yfinance 返回的列名：
         Open, High, Low, Close, Volume（索引是日期）
         
+        注意：新版 yfinance 返回 MultiIndex 列名，如 ('Close', 'AMD')
+        需要先扁平化列名再进行处理
+        
         需要映射到标准列名：
         date, open, high, low, close, volume, amount, pct_chg
         """
         df = df.copy()
+        
+        # 处理 MultiIndex 列名（新版 yfinance 返回格式）
+        # 例如: ('Close', 'AMD') -> 'Close'
+        if isinstance(df.columns, pd.MultiIndex):
+            logger.debug(f"检测到 MultiIndex 列名，进行扁平化处理")
+            # 取第一级列名（Price level: Close, High, Low, etc.）
+            df.columns = df.columns.get_level_values(0)
         
         # 重置索引，将日期从索引变为列
         df = df.reset_index()

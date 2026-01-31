@@ -2841,10 +2841,11 @@ class NotificationService:
             是否发送成功
         """
 
+        html_content = self._markdown_to_html(content)
 
         try:
             payload = {
-                'content': content
+                'content': html_content
             }
             signature =  ""
             timestamp = str(int(time.time()))

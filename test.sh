@@ -9,6 +9,7 @@
 # 测试场景：
 #   market      - 仅大盘复盘
 #   a-stock     - A股个股分析（茅台、平安银行）
+#   etf         - etf分析(卫星etf 563230)
 #   hk-stock    - 港股分析（腾讯、阿里）
 #   us-stock    - 美股分析（苹果、特斯拉）
 #   mixed       - 混合市场分析
@@ -91,6 +92,14 @@ test_a_stock() {
     info "分析A股: 600519(茅台), 000001(平安银行)"
     python3 main.py --stocks 600519,000001  --no-market-review
     success "A股分析测试完成"
+}
+
+# 测试2.5: ETF分析
+test_etf() {
+    header "测试场景: ETF分析"
+    info "分析ETF: 563230(卫星ETF)"
+    python3 main.py --stocks 563230 --no-market-review
+    success "ETF分析测试完成"
 }
 
 # 测试3: 港股分析
@@ -292,6 +301,9 @@ main() {
         a-stock|a_stock|astock)
             test_a_stock
             ;;
+        etf)
+            test_etf
+            ;;
         hk-stock|hk_stock|hkstock|hk)
             test_hk_stock
             ;;
@@ -335,6 +347,7 @@ main() {
             echo "测试场景:"
             echo "  market      - 仅大盘复盘"
             echo "  a-stock     - A股个股分析"
+            echo "  etf         - ETF分析"
             echo "  hk-stock    - 港股分析"
             echo "  us-stock    - 美股分析"
             echo "  mixed       - 混合市场分析"

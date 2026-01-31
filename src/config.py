@@ -17,6 +17,13 @@ from dotenv import load_dotenv, dotenv_values
 from dataclasses import dataclass, field
 
 
+def setup_env():
+    """初始化环境变量（支持从 .env 加载）"""
+    # src/config.py -> src/ -> root
+    env_path = Path(__file__).parent.parent / '.env'
+    load_dotenv(dotenv_path=env_path)
+
+
 @dataclass
 class Config:
     """
@@ -216,10 +223,8 @@ class Config:
         2. .env 文件
         3. 代码中的默认值
         """
-        # 加载项目根目录下的 .env 文件
-        # src/config.py -> src/ -> root
-        env_path = Path(__file__).parent.parent / '.env'
-        load_dotenv(dotenv_path=env_path)
+        # 确保环境变量已加载
+        setup_env()
 
         # === 智能代理配置 (关键修复) ===
         # 如果配置了代理，自动设置 NO_PROXY 以排除国内数据源，避免行情获取失败

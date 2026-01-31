@@ -24,6 +24,7 @@ AkshareFetcher - 主数据源 (Priority 1)
 """
 
 import logging
+import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -171,7 +172,7 @@ class AkshareFetcher(BaseFetcher):
     """
     
     name = "AkshareFetcher"
-    priority = 1
+    priority = int(os.getenv("AKSHARE_PRIORITY", "1"))
     
     def __init__(self, sleep_min: float = 2.0, sleep_max: float = 5.0):
         """

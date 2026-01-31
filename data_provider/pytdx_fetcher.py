@@ -29,6 +29,7 @@ from tenacity import (
 )
 
 from .base import BaseFetcher, DataFetchError, STANDARD_COLUMNS
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class PytdxFetcher(BaseFetcher):
     """
     
     name = "PytdxFetcher"
-    priority = 2
+    priority = int(os.getenv("PYTDX_PRIORITY", "2"))
     
     # 默认通达信行情服务器列表
     DEFAULT_HOSTS = [

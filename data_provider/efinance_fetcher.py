@@ -21,6 +21,7 @@ EfinanceFetcher - 优先数据源 (Priority 0)
 """
 
 import logging
+import os
 import random
 import time
 from dataclasses import dataclass, field
@@ -148,7 +149,7 @@ class EfinanceFetcher(BaseFetcher):
     """
     
     name = "EfinanceFetcher"
-    priority = 0  # 最高优先级，排在 AkshareFetcher 之前
+    priority = int(os.getenv("EFINANCE_PRIORITY", "0"))  # 最高优先级，排在 AkshareFetcher 之前
     
     def __init__(self, sleep_min: float = 1.5, sleep_max: float = 3.0):
         """

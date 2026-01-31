@@ -28,6 +28,7 @@ from tenacity import (
 )
 
 from .base import BaseFetcher, DataFetchError, STANDARD_COLUMNS
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class YfinanceFetcher(BaseFetcher):
     """
     
     name = "YfinanceFetcher"
-    priority = 4
+    priority = int(os.getenv("YFINANCE_PRIORITY", "4"))
     
     def __init__(self):
         """初始化 YfinanceFetcher"""

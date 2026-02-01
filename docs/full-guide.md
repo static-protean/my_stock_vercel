@@ -4,8 +4,27 @@
 
 > 💡 快速上手请参考 [README.md](../README.md)，本文档为进阶配置。
 
+## � 项目结构
+
+```
+daily_stock_analysis/
+├── main.py              # 主程序入口
+├── src/                 # 核心业务逻辑
+│   ├── analyzer.py      # AI 分析器
+│   ├── config.py        # 配置管理
+│   ├── notification.py  # 消息推送
+│   └── ...
+├── data_provider/       # 多数据源适配器
+├── bot/                 # 机器人交互模块
+├── web/                 # WebUI 模块
+├── docker/              # Docker 配置
+├── docs/                # 项目文档
+└── .github/workflows/   # GitHub Actions
+```
+
 ## 📑 目录
 
+- [项目结构](#项目结构)
 - [GitHub Actions 详细配置](#github-actions-详细配置)
 - [环境变量完整列表](#环境变量完整列表)
 - [Docker 部署](#docker-部署)

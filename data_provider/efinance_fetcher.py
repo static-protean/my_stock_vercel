@@ -516,6 +516,11 @@ class EfinanceFetcher(BaseFetcher):
             high_col = '最高' if '最高' in df.columns else 'high'
             low_col = '最低' if '最低' in df.columns else 'low'
             open_col = '开盘' if '开盘' in df.columns else 'open'
+            # efinance 也返回量比、市盈率、市值等字段
+            vol_ratio_col = '量比' if '量比' in df.columns else 'volume_ratio'
+            pe_col = '市盈率' if '市盈率' in df.columns else 'pe_ratio'
+            total_mv_col = '总市值' if '总市值' in df.columns else 'total_mv'
+            circ_mv_col = '流通市值' if '流通市值' in df.columns else 'circ_mv'
             
             quote = UnifiedRealtimeQuote(
                 code=stock_code,
@@ -531,10 +536,14 @@ class EfinanceFetcher(BaseFetcher):
                 high=safe_float(row.get(high_col)),
                 low=safe_float(row.get(low_col)),
                 open_price=safe_float(row.get(open_col)),
+                volume_ratio=safe_float(row.get(vol_ratio_col)),  # 量比
+                pe_ratio=safe_float(row.get(pe_col)),  # 市盈率
+                total_mv=safe_float(row.get(total_mv_col)),  # 总市值
+                circ_mv=safe_float(row.get(circ_mv_col)),  # 流通市值
             )
             
             logger.info(f"[实时行情-efinance] {stock_code} {quote.name}: 价格={quote.price}, 涨跌={quote.change_pct}%, "
-                       f"换手率={quote.turnover_rate}%")
+                       f"量比={quote.volume_ratio}, 换手率={quote.turnover_rate}%")
             return quote
             
         except Exception as e:

@@ -142,7 +142,8 @@ jobs:
           # GitHub Actions 环境建议关闭不稳定的数据源
           ENABLE_CHIP_DISTRIBUTION: 'false'
           # 实时行情数据源优先级（腾讯有量比且稳定，推荐首选）
-          # 可选值: tencent, akshare_sina, efinance, akshare_em
+          # 可选值: tencent, akshare_sina, efinance, akshare_em, tushare
+          # 如果有 Tushare Pro 高积分账号，可将 tushare 放在首位
           REALTIME_SOURCE_PRIORITY: ${{ vars.REALTIME_SOURCE_PRIORITY || 'tencent,akshare_sina,efinance,akshare_em' }}
           
         run: |

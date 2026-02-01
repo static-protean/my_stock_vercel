@@ -575,6 +575,14 @@ class DataFetcherManager:
                                 quote = fetcher.get_realtime_quote(stock_code, source="tencent")
                             break
                 
+                elif source == "tushare":
+                    # 尝试 TushareFetcher（需要 Tushare Pro 积分）
+                    for fetcher in self._fetchers:
+                        if fetcher.name == "TushareFetcher":
+                            if hasattr(fetcher, 'get_realtime_quote'):
+                                quote = fetcher.get_realtime_quote(stock_code)
+                            break
+                
                 if quote is not None and quote.has_basic_data():
                     logger.info(f"[实时行情] {stock_code} 成功获取 (来源: {source})")
                     return quote

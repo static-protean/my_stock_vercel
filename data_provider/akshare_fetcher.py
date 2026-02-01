@@ -986,10 +986,11 @@ class AkshareFetcher(BaseFetcher):
             
             circuit_breaker.record_success(source_key)
             
-            # 腾讯数据字段顺序（部分）：
+            # 腾讯数据字段顺序（完整）：
             # 1:名称 2:代码 3:最新价 4:昨收 5:今开 6:成交量(手) 7:外盘 8:内盘
-            # 9:买一价 10:买一量 ... 30:最高 31:最低 32:涨跌幅(%) 33:涨跌额
-            # 38:换手率(%) 39:市盈率 44:振幅
+            # 9-28:买卖五档 30:时间戳 31:涨跌额 32:涨跌幅(%) 33:今开 34:最高 35:最低/成交量/成交额
+            # 36:成交量(手) 37:成交额(万) 38:换手率(%) 39:市盈率 43:振幅(%)
+            # 44:流通市值(亿) 45:总市值(亿) 46:市净率 47:涨停价 48:跌停价 49:量比
             # 使用 realtime_types.py 中的统一转换函数
             quote = UnifiedRealtimeQuote(
                 code=stock_code,
@@ -1000,15 +1001,20 @@ class AkshareFetcher(BaseFetcher):
                 change_amount=safe_float(fields[31]) if len(fields) > 31 else None,
                 volume=safe_int(fields[6]) * 100 if fields[6] else None,  # 腾讯返回的是手，转为股
                 open_price=safe_float(fields[5]),
-                high=safe_float(fields[33]) if len(fields) > 33 else None,
-                low=safe_float(fields[34]) if len(fields) > 34 else None,
+                high=safe_float(fields[34]) if len(fields) > 34 else None,
+                low=safe_float(fields[35].split('/')[0]) if len(fields) > 35 and '/' in str(fields[35]) else safe_float(fields[35]) if len(fields) > 35 else None,
                 pre_close=safe_float(fields[4]),
                 turnover_rate=safe_float(fields[38]) if len(fields) > 38 else None,
                 amplitude=safe_float(fields[43]) if len(fields) > 43 else None,
+                volume_ratio=safe_float(fields[49]) if len(fields) > 49 else None,  # 量比
+                pe_ratio=safe_float(fields[39]) if len(fields) > 39 else None,  # 市盈率
+                pb_ratio=safe_float(fields[46]) if len(fields) > 46 else None,  # 市净率
+                circ_mv=safe_float(fields[44]) * 100000000 if len(fields) > 44 and fields[44] else None,  # 流通市值(亿->元)
+                total_mv=safe_float(fields[45]) * 100000000 if len(fields) > 45 and fields[45] else None,  # 总市值(亿->元)
             )
             
             logger.info(f"[实时行情-腾讯] {stock_code} {quote.name}: 价格={quote.price}, "
-                       f"涨跌={quote.change_pct}%, 换手率={quote.turnover_rate}%")
+                       f"涨跌={quote.change_pct}%, 量比={quote.volume_ratio}, 换手率={quote.turnover_rate}%")
             return quote
             
         except Exception as e:

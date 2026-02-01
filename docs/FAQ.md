@@ -48,7 +48,7 @@
 
 **解决方案**：
 1. **无 Tushare 账号**：无需配置 `TUSHARE_TOKEN`，系统会自动使用免费数据源（AkShare、Efinance）
-2. **有 Tushare 账号**：确认 Token 是否正确，可在 [Tushare Pro](https://tushare.pro/) 个人中心查看
+2. **有 Tushare 账号**：确认 Token 是否正确，可在 [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638 ) 个人中心查看
 3. 本项目所有核心功能均可在无 Tushare 的情况下正常运行
 
 ---

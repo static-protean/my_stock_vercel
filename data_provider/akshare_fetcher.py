@@ -234,18 +234,22 @@ class AkshareFetcher(BaseFetcher):
         从 Akshare 获取原始数据
         
         根据代码类型自动选择 API：
-        - 普通股票：使用 ak.stock_zh_a_hist()
+        - 美股：使用 ak.stock_us_daily()
+        - 港股：使用 ak.stock_hk_hist()
         - ETF 基金：使用 ak.fund_etf_hist_em()
+        - 普通 A 股：使用 ak.stock_zh_a_hist()
         
         流程：
-        1. 判断代码类型（股票/ETF）
+        1. 判断代码类型（美股/港股/ETF/A股）
         2. 设置随机 User-Agent
         3. 执行速率限制（随机休眠）
         4. 调用对应的 akshare API
         5. 处理返回数据
         """
         # 根据代码类型选择不同的获取方法
-        if _is_hk_code(stock_code):
+        if _is_us_code(stock_code):
+            return self._fetch_us_data(stock_code, start_date, end_date)
+        elif _is_hk_code(stock_code):
             return self._fetch_hk_data(stock_code, start_date, end_date)
         elif _is_etf_code(stock_code):
             return self._fetch_etf_data(stock_code, start_date, end_date)
@@ -484,6 +488,101 @@ class AkshareFetcher(BaseFetcher):
             
             raise DataFetchError(f"Akshare 获取 ETF 数据失败: {e}") from e
     
+    def _fetch_us_data(self, stock_code: str, start_date: str, end_date: str) -> pd.DataFrame:
+        """
+        获取美股历史数据
+        
+        数据来源：ak.stock_us_daily()（新浪财经接口）
+        
+        Args:
+            stock_code: 美股代码，如 'AMD', 'AAPL', 'TSLA'
+            start_date: 开始日期，格式 'YYYY-MM-DD'
+            end_date: 结束日期，格式 'YYYY-MM-DD'
+            
+        Returns:
+            美股历史数据 DataFrame
+        """
+        import akshare as ak
+        
+        # 防封禁策略 1: 随机 User-Agent
+        self._set_random_user_agent()
+        
+        # 防封禁策略 2: 强制休眠
+        self._enforce_rate_limit()
+        
+        # 美股代码直接使用大写
+        symbol = stock_code.strip().upper()
+        
+        logger.info(f"[API调用] ak.stock_us_daily(symbol={symbol}, adjust=qfq)")
+        
+        try:
+            import time as _time
+            api_start = _time.time()
+            
+            # 调用 akshare 获取美股日线数据
+            # stock_us_daily 返回全部历史数据，后续需要按日期过滤
+            df = ak.stock_us_daily(
+                symbol=symbol,
+                adjust="qfq"  # 前复权
+            )
+            
+            api_elapsed = _time.time() - api_start
+            
+            # 记录返回数据摘要
+            if df is not None and not df.empty:
+                logger.info(f"[API返回] ak.stock_us_daily 成功: 返回 {len(df)} 行数据, 耗时 {api_elapsed:.2f}s")
+                logger.info(f"[API返回] 列名: {list(df.columns)}")
+                
+                # 按日期过滤
+                df['date'] = pd.to_datetime(df['date'])
+                start_dt = pd.to_datetime(start_date)
+                end_dt = pd.to_datetime(end_date)
+                df = df[(df['date'] >= start_dt) & (df['date'] <= end_dt)]
+                
+                if not df.empty:
+                    logger.info(f"[API返回] 过滤后日期范围: {df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {df['date'].iloc[-1].strftime('%Y-%m-%d')}")
+                    logger.debug(f"[API返回] 最新3条数据:\n{df.tail(3).to_string()}")
+                else:
+                    logger.warning(f"[API返回] 过滤后数据为空，日期范围 {start_date} ~ {end_date} 无数据")
+                
+                # 转换列名为中文格式以匹配 _normalize_data
+                # stock_us_daily 返回: date, open, high, low, close, volume
+                rename_map = {
+                    'date': '日期',
+                    'open': '开盘',
+                    'high': '最高',
+                    'low': '最低',
+                    'close': '收盘',
+                    'volume': '成交量',
+                }
+                df = df.rename(columns=rename_map)
+                
+                # 计算涨跌幅（美股接口不直接返回）
+                if '收盘' in df.columns:
+                    df['涨跌幅'] = df['收盘'].pct_change() * 100
+                    df['涨跌幅'] = df['涨跌幅'].fillna(0)
+                
+                # 估算成交额（美股接口不返回）
+                if '成交量' in df.columns and '收盘' in df.columns:
+                    df['成交额'] = df['成交量'] * df['收盘']
+                else:
+                    df['成交额'] = 0
+                
+                return df
+            else:
+                logger.warning(f"[API返回] ak.stock_us_daily 返回空数据, 耗时 {api_elapsed:.2f}s")
+                return pd.DataFrame()
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            
+            # 检测反爬封禁
+            if any(keyword in error_msg for keyword in ['banned', 'blocked', '频率', 'rate', '限制']):
+                logger.warning(f"检测到可能被封禁: {e}")
+                raise RateLimitError(f"Akshare 可能被限流: {e}") from e
+            
+            raise DataFetchError(f"Akshare 获取美股数据失败: {e}") from e
+
     def _fetch_hk_data(self, stock_code: str, start_date: str, end_date: str) -> pd.DataFrame:
         """
         获取港股历史数据

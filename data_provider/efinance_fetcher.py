@@ -23,6 +23,7 @@ EfinanceFetcher - 优先数据源 (Priority 0)
 import logging
 import os
 import random
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -129,6 +130,18 @@ def _is_etf_code(stock_code: str) -> bool:
     return stock_code.startswith(etf_prefixes) and len(stock_code) == 6
 
 
+def _is_us_code(stock_code: str) -> bool:
+    """
+    判断代码是否为美股
+    
+    美股代码规则：
+    - 1-5个大写字母，如 'AAPL', 'TSLA'
+    - 可能包含 '.'，如 'BRK.B'
+    """
+    code = stock_code.strip().upper()
+    return bool(re.match(r'^[A-Z]{1,5}(\.[A-Z])?$', code))
+
+
 class EfinanceFetcher(BaseFetcher):
     """
     Efinance 数据源实现
@@ -214,16 +227,21 @@ class EfinanceFetcher(BaseFetcher):
         从 efinance 获取原始数据
         
         根据代码类型自动选择 API：
+        - 美股：不支持，抛出异常让 DataFetcherManager 切换到其他数据源
         - 普通股票：使用 ef.stock.get_quote_history()
         - ETF 基金：使用 ef.fund.get_quote_history()
         
         流程：
-        1. 判断代码类型（股票/ETF）
+        1. 判断代码类型（美股/股票/ETF）
         2. 设置随机 User-Agent
         3. 执行速率限制（随机休眠）
         4. 调用对应的 efinance API
         5. 处理返回数据
         """
+        # 美股不支持，抛出异常让 DataFetcherManager 切换到 AkshareFetcher/YfinanceFetcher
+        if _is_us_code(stock_code):
+            raise DataFetchError(f"EfinanceFetcher 不支持美股 {stock_code}，请使用 AkshareFetcher 或 YfinanceFetcher")
+        
         # 根据代码类型选择不同的获取方法
         if _is_etf_code(stock_code):
             return self._fetch_etf_data(stock_code, start_date, end_date)

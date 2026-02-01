@@ -29,6 +29,7 @@ from tenacity import (
 )
 
 from .base import BaseFetcher, DataFetchError, STANDARD_COLUMNS
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class BaostockFetcher(BaseFetcher):
     """
     
     name = "BaostockFetcher"
-    priority = 3
+    priority = int(os.getenv("BAOSTOCK_PRIORITY", "3"))
     
     def __init__(self):
         """初始化 BaostockFetcher"""

@@ -1222,7 +1222,11 @@ class NotificationService:
             logger.warning("企业微信 Webhook 未配置，跳过推送")
             return False
         
-        max_bytes = self._wechat_max_bytes  # 从配置读取，默认 4000 字节
+        # 根据消息类型动态限制上限，避免 text 类型超过企业微信 2048 字节限制
+        if self._wechat_msg_type == 'text':
+            max_bytes = min(self._wechat_max_bytes, 2000)  # 预留一定字节给系统/分页标记
+        else:
+            max_bytes = self._wechat_max_bytes  # markdown 默认 4000 字节
         
         # 检查字节长度，超长则分批发送
         content_bytes = len(content.encode('utf-8'))
@@ -1283,12 +1287,13 @@ class NotificationService:
         current_chunk = []
         current_bytes = 0
         separator_bytes = get_bytes(separator)
+        effective_max_bytes = max_bytes - 50  # 预留分页标记空间，避免边界超限
         
         for section in sections:
             section_bytes = get_bytes(section) + separator_bytes
             
             # 如果单个 section 就超长，需要强制截断
-            if section_bytes > max_bytes:
+            if section_bytes > effective_max_bytes:
                 # 先发送当前积累的内容
                 if current_chunk:
                     chunks.append(separator.join(current_chunk))
@@ -1296,13 +1301,13 @@ class NotificationService:
                     current_bytes = 0
                 
                 # 强制截断这个超长 section（按字节截断）
-                truncated = self._truncate_to_bytes(section, max_bytes - 200)
+                truncated = self._truncate_to_bytes(section, effective_max_bytes - 200)
                 truncated += "\n\n...(本段内容过长已截断)"
                 chunks.append(truncated)
                 continue
             
             # 检查加入后是否超长
-            if current_bytes + section_bytes > max_bytes:
+            if current_bytes + section_bytes > effective_max_bytes:
                 # 保存当前块，开始新块
                 if current_chunk:
                     chunks.append(separator.join(current_chunk))

@@ -26,6 +26,7 @@ from typing import List, Dict, Any, Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.header import Header
+from email.utils import formataddr
 from enum import Enum
 
 import requests
@@ -154,6 +155,7 @@ class NotificationService:
         # 邮件配置
         self._email_config = {
             'sender': config.email_sender,
+            'sender_name': getattr(config, 'email_sender_name', 'daily_stock_analysis股票分析助手'),
             'password': config.email_password,
             'receivers': config.email_receivers or ([config.email_sender] if config.email_sender else []),
         }
@@ -1750,7 +1752,7 @@ class NotificationService:
             # 构建邮件
             msg = MIMEMultipart('alternative')
             msg['Subject'] = Header(subject, 'utf-8')
-            msg['From'] = sender
+            msg['From'] = formataddr((self._email_config.get('sender_name', '股票分析助手'), sender))
             msg['To'] = ', '.join(receivers)
             
             # 添加纯文本和 HTML 两个版本

@@ -135,6 +135,13 @@ class Config:
 
     # 是否保存分析上下文快照（用于历史回溯）
     save_context_snapshot: bool = True
+
+    # === 回测配置 ===
+    backtest_enabled: bool = True
+    backtest_eval_window_days: int = 10
+    backtest_min_age_days: int = 14
+    backtest_engine_version: str = "v1"
+    backtest_neutral_band_pct: float = 2.0
     
     # === 日志配置 ===
     log_dir: str = "./logs"  # 日志文件目录
@@ -374,6 +381,11 @@ class Config:
             wechat_msg_type=wechat_msg_type_lower,
             database_path=os.getenv('DATABASE_PATH', './data/stock_analysis.db'),
             save_context_snapshot=os.getenv('SAVE_CONTEXT_SNAPSHOT', 'true').lower() == 'true',
+            backtest_enabled=os.getenv('BACKTEST_ENABLED', 'true').lower() == 'true',
+            backtest_eval_window_days=int(os.getenv('BACKTEST_EVAL_WINDOW_DAYS', '10')),
+            backtest_min_age_days=int(os.getenv('BACKTEST_MIN_AGE_DAYS', '14')),
+            backtest_engine_version=os.getenv('BACKTEST_ENGINE_VERSION', 'v1'),
+            backtest_neutral_band_pct=float(os.getenv('BACKTEST_NEUTRAL_BAND_PCT', '2.0')),
             log_dir=os.getenv('LOG_DIR', './logs'),
             log_level=os.getenv('LOG_LEVEL', 'INFO'),
             max_workers=int(os.getenv('MAX_WORKERS', '3')),

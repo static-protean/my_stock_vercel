@@ -8,6 +8,10 @@
 ## [Unreleased]
 
 ### 新增
+- 📷 **Markdown 转图片** (Issue #289)
+  - 支持 `MARKDOWN_TO_IMAGE_CHANNELS` 配置，对 Telegram、企业微信、自定义 Webhook（Discord）、邮件以图片形式发送报告
+  - 邮件为内联附件，增强对不支持 HTML 客户端的兼容性
+  - 需安装 `wkhtmltopdf` 和 `imgkit`
 - 📧 **股票分组发往不同邮箱** (Issue #268)
   - 支持 `STOCK_GROUP_N` + `EMAIL_GROUP_N` 配置，不同股票组报告发送到对应邮箱
   - 大盘复盘发往所有配置的邮箱

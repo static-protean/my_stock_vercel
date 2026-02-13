@@ -94,6 +94,8 @@ daily_stock_analysis/
 | `SINGLE_STOCK_NOTIFY` | 单股推送模式：设为 `true` 则每分析完一只股票立即推送 | 可选 |
 | `REPORT_TYPE` | 报告类型：`simple`(精简) 或 `full`(完整)，Docker环境推荐设为 `full` | 可选 |
 | `ANALYSIS_DELAY` | 个股分析和大盘分析之间的延迟（秒），避免API限流，如 `10` | 可选 |
+| `MARKDOWN_TO_IMAGE_CHANNELS` | 将 Markdown 转为图片发送的渠道（用逗号分隔）：telegram,wechat,custom,email，需安装 wkhtmltopdf | 可选 |
+| `MARKDOWN_TO_IMAGE_MAX_CHARS` | 超过此长度不转图片，避免超大图片（默认 15000） | 可选 |
 
 #### 其他配置
 
@@ -482,6 +484,19 @@ PUSHOVER_API_TOKEN=your_api_token
 - 支持通知优先级和声音设置
 - 免费额度足够个人使用（每月 10,000 条）
 - 消息可保留 7 天
+
+### Markdown 转图片（可选）
+
+配置 `MARKDOWN_TO_IMAGE_CHANNELS` 可将报告以图片形式发送至不支持 Markdown 的渠道（telegram, wechat, custom, email）。
+
+**依赖安装**：
+
+1. **imgkit**：已包含在 `requirements.txt`，执行 `pip install -r requirements.txt` 时会自动安装
+2. **wkhtmltopdf**：系统级依赖，需手动安装：
+   - **macOS**：`brew install wkhtmltopdf`
+   - **Debian/Ubuntu**：`apt install wkhtmltopdf`
+
+未安装或安装失败时，将自动回退为 Markdown 文本发送。
 
 ---
 

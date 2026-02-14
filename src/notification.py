@@ -183,7 +183,8 @@ class NotificationService:
         # 自定义 Webhook 配置
         self._custom_webhook_urls = getattr(config, 'custom_webhook_urls', []) or []
         self._custom_webhook_bearer_token = getattr(config, 'custom_webhook_bearer_token', None)
-        
+        self._webhook_verify_ssl = getattr(config, 'webhook_verify_ssl', True)
+
         # Discord 配置
         self._discord_config = {
             'bot_token': getattr(config, 'discord_bot_token', None),
@@ -1373,7 +1374,7 @@ class NotificationService:
                 "image": {"base64": b64, "md5": md5_hash},
             }
             response = requests.post(
-                self._wechat_url, json=payload, timeout=30
+                self._wechat_url, json=payload, timeout=30, verify=self._webhook_verify_ssl
             )
             if response.status_code == 200:
                 result = response.json()
@@ -1594,7 +1595,8 @@ class NotificationService:
         response = requests.post(
             self._wechat_url,
             json=payload,
-            timeout=10
+            timeout=10,
+            verify=self._webhook_verify_ssl
         )
         
         if response.status_code == 200:
@@ -1808,7 +1810,8 @@ class NotificationService:
             response = requests.post(
                 self._feishu_url,
                 json=payload,
-                timeout=30
+                timeout=30,
+                verify=self._webhook_verify_ssl
             )
 
             logger.debug(f"飞书响应状态码: {response.status_code}")
@@ -2523,7 +2526,8 @@ class NotificationService:
                             f"Bearer {self._custom_webhook_bearer_token}"
                         )
                     response = requests.post(
-                        url, data=data, files=files, headers=headers, timeout=30
+                        url, data=data, files=files, headers=headers, timeout=30,
+                        verify=self._webhook_verify_ssl
                     )
                     if response.status_code in (200, 204):
                         logger.info("自定义 Webhook %d（Discord 图片）推送成功", i + 1)
@@ -2558,7 +2562,7 @@ class NotificationService:
         if self._custom_webhook_bearer_token:
             headers['Authorization'] = f'Bearer {self._custom_webhook_bearer_token}'
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        response = requests.post(url, data=body, headers=headers, timeout=timeout)
+        response = requests.post(url, data=body, headers=headers, timeout=timeout, verify=self._webhook_verify_ssl)
         if response.status_code == 200:
             return True
         logger.error(f"自定义 Webhook 推送失败: HTTP {response.status_code}")
@@ -3068,7 +3072,8 @@ class NotificationService:
             response = requests.post(
                 self._discord_config['webhook_url'],
                 json=payload,
-                timeout=10
+                timeout=10,
+                verify=self._webhook_verify_ssl
             )
             
             if response.status_code in [200, 204]:
@@ -3145,11 +3150,15 @@ class NotificationService:
                     hashlib.sha256
                 ).hexdigest()
             url = self._astrbot_config['astrbot_url']
-            response = requests.post(url, json=payload, timeout=10,headers={
-                        "Content-Type": "application/json",
-                        "X-Signature": signature,
-                        "X-Timestamp": timestamp
-                    })
+            response = requests.post(
+                url, json=payload, timeout=10,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Signature": signature,
+                    "X-Timestamp": timestamp
+                },
+                verify=self._webhook_verify_ssl
+            )
 
             if response.status_code == 200:
                 logger.info("AstrBot 消息发送成功")

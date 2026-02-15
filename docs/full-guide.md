@@ -375,11 +375,40 @@ schedule:
 
 ### 本地定时任务
 
+内建的定时任务调度器支持每天在指定时间（默认 18:00）运行分析。
+
+#### 命令行方式
+
 ```bash
-# 启动定时模式（默认 18:00 执行）
+# 启动定时模式（启动时立即执行一次，随后每天 18:00 执行）
 python main.py --schedule
 
-# 或使用 crontab
+# 启动定时模式（启动时不执行，仅等待下次定时触发）
+python main.py --schedule --no-run-immediately
+```
+
+#### 环境变量方式
+
+你也可以通过环境变量配置定时行为（适用于 Docker 或 .env）：
+
+| 变量名 | 说明 | 默认值 | 示例 |
+|--------|------|:-------:|:-----:|
+| `SCHEDULE_ENABLED` | 是否启用定时任务 | `false` | `true` |
+| `SCHEDULE_TIME` | 每日执行时间 (HH:MM) | `18:00` | `09:30` |
+| `SCHEDULE_RUN_IMMEDIATELY` | 启动服务时是否立即运行一次 | `true` | `false` |
+
+例如在 Docker 中配置：
+
+```bash
+# 设置启动时不立即分析
+docker run -e SCHEDULE_ENABLED=true -e SCHEDULE_RUN_IMMEDIATELY=false ...
+```
+
+#### 使用 Crontab
+
+如果不想使用常驻进程，也可以使用系统的 Cron：
+
+```bash
 crontab -e
 # 添加：0 18 * * 1-5 cd /path/to/project && python main.py
 ```

@@ -45,6 +45,7 @@ COPY *.py ./
 COPY api/ ./api/
 COPY data_provider/ ./data_provider/
 COPY bot/ ./bot/
+COPY patch/ ./patch/
 COPY src/ ./src/
 COPY --from=web-builder /app/static ./static/
 

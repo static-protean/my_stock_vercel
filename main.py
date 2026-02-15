@@ -116,6 +116,12 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        '--no-run-immediately',
+        action='store_true',
+        help='定时任务启动时不立即执行一次'
+    )
+
+    parser.add_argument(
         '--market-review',
         action='store_true',
         help='仅运行大盘复盘分析'
@@ -526,6 +532,15 @@ def main() -> int:
             logger.info("模式: 定时任务")
             logger.info(f"每日执行时间: {config.schedule_time}")
 
+            # Determine whether to run immediately:
+            # Command line arg --no-run-immediately overrides config if present.
+            # Otherwise use config (defaults to True).
+            should_run_immediately = config.schedule_run_immediately
+            if getattr(args, 'no_run_immediately', False):
+                should_run_immediately = False
+            
+            logger.info(f"启动时立即执行: {should_run_immediately}")
+
             from src.scheduler import run_with_schedule
 
             def scheduled_task():
@@ -534,7 +549,7 @@ def main() -> int:
             run_with_schedule(
                 task=scheduled_task,
                 schedule_time=config.schedule_time,
-                run_immediately=True  # 启动时先执行一次
+                run_immediately=should_run_immediately
             )
             return 0
 

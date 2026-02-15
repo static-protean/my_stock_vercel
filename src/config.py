@@ -70,10 +70,17 @@ class Config:
     gemini_max_retries: int = 5  # 最大重试次数
     gemini_retry_delay: float = 5.0  # 重试基础延时（秒）
 
-    # OpenAI 兼容 API（备选，当 Gemini 不可用时使用）
+    # Anthropic Claude API（备选，当 Gemini 不可用时使用）
+    anthropic_api_key: Optional[str] = None
+    anthropic_model: str = "claude-3-5-sonnet-20241022"  # Claude model name
+    anthropic_temperature: float = 0.7  # Anthropic temperature (0.0-1.0, default 0.7)
+    anthropic_max_tokens: int = 8192  # Max tokens for Anthropic responses
+
+    # OpenAI 兼容 API（备选，当 Gemini/Anthropic 不可用时使用）
     openai_api_key: Optional[str] = None
     openai_base_url: Optional[str] = None  # 如: https://api.openai.com/v1
     openai_model: str = "gpt-4o-mini"  # OpenAI 兼容模型名称
+    openai_vision_model: Optional[str] = None  # Vision 专用模型（可选，不配置则用 openai_model；部分模型如 DeepSeek 不支持图像）
     openai_temperature: float = 0.7  # OpenAI 温度参数（0.0-2.0，默认0.7）
     
     # === 搜索引擎配置（支持多 Key 负载均衡）===
@@ -364,9 +371,14 @@ class Config:
             gemini_request_delay=float(os.getenv('GEMINI_REQUEST_DELAY', '2.0')),
             gemini_max_retries=int(os.getenv('GEMINI_MAX_RETRIES', '5')),
             gemini_retry_delay=float(os.getenv('GEMINI_RETRY_DELAY', '5.0')),
+            anthropic_api_key=os.getenv('ANTHROPIC_API_KEY'),
+            anthropic_model=os.getenv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
+            anthropic_temperature=float(os.getenv('ANTHROPIC_TEMPERATURE', '0.7')),
+            anthropic_max_tokens=int(os.getenv('ANTHROPIC_MAX_TOKENS', '8192')),
             openai_api_key=os.getenv('OPENAI_API_KEY'),
             openai_base_url=os.getenv('OPENAI_BASE_URL'),
             openai_model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
+            openai_vision_model=os.getenv('OPENAI_VISION_MODEL') or None,
             openai_temperature=float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
             bocha_api_keys=bocha_api_keys,
             tavily_api_keys=tavily_api_keys,
@@ -572,10 +584,10 @@ class Config:
         if not self.tushare_token:
             warnings.append("提示：未配置 Tushare Token，将使用其他数据源")
         
-        if not self.gemini_api_key and not self.openai_api_key:
-            warnings.append("警告：未配置 Gemini 或 OpenAI API Key，AI 分析功能将不可用")
-        elif not self.gemini_api_key:
-            warnings.append("提示：未配置 Gemini API Key，将使用 OpenAI 兼容 API")
+        if not self.gemini_api_key and not self.anthropic_api_key and not self.openai_api_key:
+            warnings.append("警告：未配置 Gemini/Anthropic/OpenAI API Key，AI 分析功能将不可用")
+        elif not self.gemini_api_key and not self.anthropic_api_key:
+            warnings.append("提示：未配置 Gemini/Anthropic API Key，将使用 OpenAI 兼容 API")
         
         if not self.bocha_api_keys and not self.tavily_api_keys and not self.brave_api_keys and not self.serpapi_keys:
             warnings.append("提示：未配置搜索引擎 API Key (Bocha/Tavily/Brave/SerpAPI)，新闻搜索功能将不可用")
@@ -589,7 +601,7 @@ class Config:
             (self.pushover_user_key and self.pushover_api_token) or
             self.pushplus_token or
             self.serverchan3_sendkey or
-            (self.custom_webhook_urls and self.custom_webhook_bearer_token) or
+            self.custom_webhook_urls or
             (self.discord_bot_token and self.discord_main_channel_id) or
             self.discord_webhook_url
         )

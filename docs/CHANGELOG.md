@@ -7,6 +7,27 @@
 
 ## [Unreleased]
 
+### 优化
+- 🔒 **CI 门禁统一（P0）**
+  - 新增 `scripts/ci_gate.sh` 作为后端门禁单一入口
+  - 主 CI 改为 `backend-gate`、`docker-build`、`web-gate` 三段式
+  - CI 触发改为所有 PR，避免 Required Checks 因路径过滤缺失而卡住合并
+  - `web-gate` 支持前端路径变更按需触发
+  - 新增 `network-smoke` 工作流承载非阻断网络场景回归（`pytest -m network` + `test.sh quick`）
+- 🔍 **PR 审查门槛收紧（P0）**
+  - `pr-review` 中 flake8 严重错误改为阻断，不再仅告警
+- 📦 **发布链路收敛（P0）**
+  - `docker-publish` 调整为 tag 主触发，并增加发布前门禁校验
+  - 手动发布增加 `release_tag` 输入与 semver/changelog 强校验，避免绕过版本规范
+  - 发布前新增 `README.md` 和 `docs/CHANGELOG.md` 校验
+  - 发布前新增 Docker smoke（关键模块导入）
+- 📝 **PR 模板升级（P0）**
+  - 增加背景、范围、验证命令与结果、回滚方案、Issue 关联等必填项
+- 🤖 **AI 审查覆盖增强（P0）**
+  - `pr-review` 将 `.github/workflows/**` 与 `.github/scripts/**` 纳入可审查范围
+  - 修复自动标签步骤在 `pull_request_target` 事件下不执行的问题
+  - 新增 `AI_REVIEW_STRICT` 开关，可选将 AI 审查失败升级为阻断
+
 ### 新增
 - 📊 **仅分析结果摘要** (Issue #262)
   - 支持 `REPORT_SUMMARY_ONLY` 环境变量，设为 `true` 时只推送汇总，不含个股详情

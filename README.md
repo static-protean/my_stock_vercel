@@ -272,6 +272,23 @@ python main.py
 
 详见 [贡献指南](docs/CONTRIBUTING.md)
 
+### 本地门禁（建议先跑）
+
+```bash
+pip install -r requirements.txt
+pip install flake8 pytest
+./scripts/ci_gate.sh
+```
+
+如修改前端（`apps/dsa-web`）：
+
+```bash
+cd apps/dsa-web
+npm ci
+npm run lint
+npm run build
+```
+
 ## 📄 License
 [MIT License](LICENSE) © 2026 ZhuLinsen
 

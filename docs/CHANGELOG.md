@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### 新增
+- 📊 **仅分析结果摘要** (Issue #262)
+  - 支持 `REPORT_SUMMARY_ONLY` 环境变量，设为 `true` 时只推送汇总，不含个股详情
+  - 默认 `false`，多股时适合快速浏览
 - 📷 **Markdown 转图片** (Issue #289)
   - 支持 `MARKDOWN_TO_IMAGE_CHANNELS` 配置，对 Telegram、企业微信、自定义 Webhook（Discord）、邮件以图片形式发送报告
   - 邮件为内联附件，增强对不支持 HTML 客户端的兼容性

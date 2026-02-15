@@ -585,25 +585,27 @@ class StockAnalysisPipeline:
             return None
     
     def run(
-        self, 
+        self,
         stock_codes: Optional[List[str]] = None,
         dry_run: bool = False,
-        send_notification: bool = True
+        send_notification: bool = True,
+        merge_notification: bool = False
     ) -> List[AnalysisResult]:
         """
         运行完整的分析流程
-        
+
         流程：
         1. 获取待分析的股票列表
         2. 使用线程池并发处理
         3. 收集分析结果
         4. 发送通知
-        
+
         Args:
             stock_codes: 股票代码列表（可选，默认使用配置中的自选股）
             dry_run: 是否仅获取数据不分析
             send_notification: 是否发送推送通知
-            
+            merge_notification: 是否合并推送（跳过本次推送，由 main 层合并个股+大盘后统一发送，Issue #190）
+
         Returns:
             分析结果列表
         """
@@ -694,6 +696,10 @@ class StockAnalysisPipeline:
             if single_stock_notify:
                 # 单股推送模式：只保存汇总报告，不再重复推送
                 logger.info("单股推送模式：跳过汇总推送，仅保存报告到本地")
+                self._send_notifications(results, skip_push=True)
+            elif merge_notification:
+                # 合并模式（Issue #190）：仅保存，不推送，由 main 层合并个股+大盘后统一发送
+                logger.info("合并推送模式：跳过本次推送，将在个股+大盘复盘后统一发送")
                 self._send_notifications(results, skip_push=True)
             else:
                 self._send_notifications(results)

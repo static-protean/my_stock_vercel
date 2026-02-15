@@ -40,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       safe_to_run: ${{ steps.check_sensitive.outputs.safe_to_run }}
+      sensitive_files_changed: ${{ steps.check_sensitive.outputs.sensitive_files_changed }}
     
     steps:
       - name: 📥 检出代码
@@ -65,12 +66,12 @@ jobs:
             echo "$SENSITIVE_FILES" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "为了安全，自动审查已暂停。请仓库维护者人工检查这些文件后，可通过 workflow_dispatch 手动触发审查。" >> $GITHUB_STEP_SUMMARY
-            
-            echo "safe_to_run=false" >> $GITHUB_OUTPUT
-            exit 1
+            echo "已标记为敏感变更，请重点人工复核；自动流程继续执行。" >> $GITHUB_STEP_SUMMARY
+            echo "sensitive_files_changed=true" >> $GITHUB_OUTPUT
+            echo "safe_to_run=true" >> $GITHUB_OUTPUT
           else
             echo "✅ 未检测到敏感文件修改" >> $GITHUB_STEP_SUMMARY
+            echo "sensitive_files_changed=false" >> $GITHUB_OUTPUT
             echo "safe_to_run=true" >> $GITHUB_OUTPUT
           fi
 

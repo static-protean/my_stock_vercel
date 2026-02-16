@@ -40,6 +40,7 @@ from tenacity import (
 )
 
 from patch.eastmoney_patch import eastmoney_patch
+from src.config import get_config
 from .base import BaseFetcher, DataFetchError, RateLimitError, STANDARD_COLUMNS
 from .realtime_types import (
     UnifiedRealtimeQuote, RealtimeSource,
@@ -183,7 +184,9 @@ class EfinanceFetcher(BaseFetcher):
         self.sleep_min = sleep_min
         self.sleep_max = sleep_max
         self._last_request_time: Optional[float] = None
-        eastmoney_patch()
+        # 东财补丁开启才执行打补丁操作
+        if get_config().enable_eastmoney_patch:
+            eastmoney_patch()
     
     def _set_random_user_agent(self) -> None:
         """

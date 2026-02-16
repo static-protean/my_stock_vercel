@@ -51,10 +51,11 @@
 
 | 规则 | 说明 |
 |------|------|
-| 严禁追高 | 乖离率 > 5% 自动提示风险 |
+| 严禁追高 | 乖离率超阈值（默认 5%，可配置）自动提示风险；强势趋势股自动放宽 |
 | 趋势交易 | MA5 > MA10 > MA20 多头排列 |
 | 精确点位 | 买入价、止损价、目标价 |
 | 检查清单 | 每项条件以「满足 / 注意 / 不满足」标记 |
+| 新闻时效 | 可配置新闻最大时效（默认 3 天），避免使用过时信息 |
 
 ## 🚀 快速开始
 
@@ -127,6 +128,8 @@
 | `BRAVE_API_KEYS` | [Brave Search](https://brave.com/search/api/) API（隐私优先，美股优化，多个key用逗号分隔） | 可选 |
 | `TUSHARE_TOKEN` | [Tushare Pro](https://tushare.pro/weborder/#/login?reg=834638 ) Token | 可选 |
 | `WECHAT_MSG_TYPE` | 企微消息类型，默认 markdown，支持配置 text 类型，发送纯 markdown 文本 | 可选 |
+| `NEWS_MAX_AGE_DAYS` | 新闻最大时效（天），默认 3，避免使用过时信息 | 可选 |
+| `BIAS_THRESHOLD` | 乖离率阈值（%），默认 5.0，超过提示不追高；强势趋势股自动放宽 | 可选 |
 
 #### 3. 启用 Actions
 

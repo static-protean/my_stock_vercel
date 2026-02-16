@@ -534,7 +534,8 @@ def main() -> int:
                     bocha_keys=config.bocha_api_keys,
                     tavily_keys=config.tavily_api_keys,
                     brave_keys=config.brave_api_keys,
-                    serpapi_keys=config.serpapi_keys
+                    serpapi_keys=config.serpapi_keys,
+                    news_max_age_days=config.news_max_age_days,
                 )
 
             if config.gemini_api_key or config.openai_api_key:

@@ -32,6 +32,11 @@
 - 📊 **仅分析结果摘要** (Issue #262)
   - 支持 `REPORT_SUMMARY_ONLY` 环境变量，设为 `true` 时只推送汇总，不含个股详情
   - 默认 `false`，多股时适合快速浏览
+- **新闻时效性与乖离率优化** (Issue #296)
+  - `NEWS_MAX_AGE_DAYS`：新闻最大时效（天），默认 3，避免使用过时信息
+  - `BIAS_THRESHOLD`：乖离率阈值（%），默认 5.0，可配置
+  - 强势趋势股（多头排列且趋势强度 ≥70）自动放宽乖离率到 1.5 倍，避免错杀 LITE/SNDK 等趋势股
+  - AI System Prompt 增加 PE 估值关注和强势趋势放宽软性引导
 - 📷 **Markdown 转图片** (Issue #289)
   - 支持 `MARKDOWN_TO_IMAGE_CHANNELS` 配置，对 Telegram、企业微信、自定义 Webhook（Discord）、邮件以图片形式发送报告
   - 邮件为内联附件，增强对不支持 HTML 客户端的兼容性

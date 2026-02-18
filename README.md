@@ -47,6 +47,8 @@
 | 行情数据 | AkShare、Tushare、Pytdx、Baostock、YFinance |
 | 新闻搜索 | Tavily、SerpAPI、Bocha、Brave |
 
+> 注：美股历史数据与实时行情统一使用 YFinance，确保复权一致性
+
 ### 内置交易纪律
 
 | 规则 | 说明 |

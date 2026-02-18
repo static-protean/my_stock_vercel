@@ -234,7 +234,7 @@ class AkshareFetcher(BaseFetcher):
         从 Akshare 获取原始数据
         
         根据代码类型自动选择 API：
-        - 美股：使用 ak.stock_us_daily()
+        - 美股：不支持，抛出异常由 YfinanceFetcher 处理（Issue #311）
         - 港股：使用 ak.stock_hk_hist()
         - ETF 基金：使用 ak.fund_etf_hist_em()
         - 普通 A 股：使用 ak.stock_zh_a_hist()
@@ -248,7 +248,11 @@ class AkshareFetcher(BaseFetcher):
         """
         # 根据代码类型选择不同的获取方法
         if _is_us_code(stock_code):
-            return self._fetch_us_data(stock_code, start_date, end_date)
+            # 美股：akshare 的 stock_us_daily 接口复权存在已知问题（参见 Issue #311）
+            # 交由 YfinanceFetcher 处理，确保复权价格一致
+            raise DataFetchError(
+                f"AkshareFetcher 不支持美股 {stock_code}，请使用 YfinanceFetcher 获取正确的复权价格"
+            )
         elif _is_hk_code(stock_code):
             return self._fetch_hk_data(stock_code, start_date, end_date)
         elif _is_etf_code(stock_code):

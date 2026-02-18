@@ -8,6 +8,7 @@
 ## [Unreleased]
 
 ### 修复
+- 修复美股（如 ADBE）技术指标矛盾：akshare 美股复权数据异常，统一美股历史数据源为 YFinance（Issue #311）
 - 🐛 **美股指数实时行情与日线数据** (Issue #273)
   - 修复 SPX、DJI、IXIC、NDX、VIX、RUT 等美股指数无法获取实时行情的问题
   - 新增 `us_index_mapping` 模块，将用户输入（如 SPX）映射为 Yahoo Finance 符号（如 ^GSPC）

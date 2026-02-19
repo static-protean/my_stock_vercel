@@ -193,6 +193,8 @@ class Config:
     schedule_time: str = "18:00"              # 每日推送时间（HH:MM 格式）
     schedule_run_immediately: bool = True     # 启动时是否立即执行一次
     market_review_enabled: bool = True        # 是否启用大盘复盘
+    # 大盘复盘市场区域：cn(A股)、us(美股)、both(两者)，us 适合仅关注美股的用户
+    market_review_region: str = "cn"
 
     # === 实时行情增强数据配置 ===
     # 实时行情开关（关闭后使用历史收盘价进行分析）
@@ -451,6 +453,9 @@ class Config:
             schedule_time=os.getenv('SCHEDULE_TIME', '18:00'),
             schedule_run_immediately=os.getenv('SCHEDULE_RUN_IMMEDIATELY', 'true').lower() == 'true',
             market_review_enabled=os.getenv('MARKET_REVIEW_ENABLED', 'true').lower() == 'true',
+            market_review_region=cls._parse_market_review_region(
+                os.getenv('MARKET_REVIEW_REGION', 'cn')
+            ),
             webui_enabled=os.getenv('WEBUI_ENABLED', 'false').lower() == 'true',
             webui_host=os.getenv('WEBUI_HOST', '127.0.0.1'),
             webui_port=int(os.getenv('WEBUI_PORT', '8000')),
@@ -518,6 +523,18 @@ class Config:
             if 'stocks' in g and 'emails' in g and g['stocks'] and g['emails']:
                 result.append((g['stocks'], g['emails']))
         return result
+
+    @classmethod
+    def _parse_market_review_region(cls, value: str) -> str:
+        """解析大盘复盘市场区域，非法值记录警告后回退为 cn"""
+        import logging
+        v = (value or 'cn').strip().lower()
+        if v in ('cn', 'us', 'both'):
+            return v
+        logging.getLogger(__name__).warning(
+            f"MARKET_REVIEW_REGION 配置值 '{value}' 无效，已回退为默认值 'cn'（合法值：cn / us / both）"
+        )
+        return 'cn'
 
     @classmethod
     def _resolve_realtime_source_priority(cls) -> str:

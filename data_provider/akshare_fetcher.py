@@ -1305,10 +1305,12 @@ class AkshareFetcher(BaseFetcher):
         
         return result
 
-    def get_main_indices(self) -> Optional[List[Dict[str, Any]]]:
+    def get_main_indices(self, region: str = "cn") -> Optional[List[Dict[str, Any]]]:
         """
-        获取主要指数实时行情 (新浪接口)
+        获取主要指数实时行情 (新浪接口)，仅支持 A 股
         """
+        if region != "cn":
+            return None
         import akshare as ak
 
         # 主要指数代码映射

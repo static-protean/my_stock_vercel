@@ -37,6 +37,10 @@
   - 新增 `AI_REVIEW_STRICT` 开关，可选将 AI 审查失败升级为阻断
 
 ### 新增
+- **大盘复盘可选区域** (Issue #299)
+  - 支持 `MARKET_REVIEW_REGION` 环境变量：cn（A股）、us（美股）、both（两者）
+  - us 模式适合仅关注美股的用户，使用 SPX/纳斯达克/道指/VIX 等指数；both 模式可同时复盘 A 股与美股
+  - 默认 cn，保持向后兼容
 - 📊 **仅分析结果摘要** (Issue #262)
   - 支持 `REPORT_SUMMARY_ONLY` 环境变量，设为 `true` 时只推送汇总，不含个股详情
   - 默认 `false`，多股时适合快速浏览

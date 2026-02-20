@@ -16,6 +16,11 @@
   - 消除重复的美股识别逻辑，统一使用 `is_us_stock_code()` 函数
 
 ### 优化
+- 🎨 **首页输入栏布局对齐优化**
+  - 股票代码输入框左缘与历史记录 glass-card 框左对齐
+  - 分析按钮右缘与 Market Sentiment 外框右对齐
+  - Market Sentiment 卡片向下拉伸填满格子，消除与 STRATEGY POINTS 之间的空隙
+  - 窄屏时输入栏填满宽度，响应式对齐保持一致
 - 🔒 **CI 门禁统一（P0）**
   - 新增 `scripts/ci_gate.sh` 作为后端门禁单一入口
   - 主 CI 改为 `backend-gate`、`docker-build`、`web-gate` 三段式

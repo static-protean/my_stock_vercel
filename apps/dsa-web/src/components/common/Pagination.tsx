@@ -7,6 +7,41 @@ interface PaginationProps {
   className?: string;
 }
 
+interface PageButtonProps {
+  page: number | string;
+  isActive?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
+  children?: React.ReactNode;
+}
+
+const PageButton: React.FC<PageButtonProps> = ({ page, isActive, disabled, onClick, children }) => {
+  const isEllipsis = page === '...';
+
+  if (isEllipsis) {
+    return (
+      <span className="px-3 py-2 text-muted">...</span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`
+        min-w-[40px] h-10 px-3 rounded-lg font-medium
+        transition-all duration-200
+        hover:bg-hover hover:text-white border border-white/5
+        ${isActive ? 'bg-cyan text-muted' : 'bg-elevated text-secondary'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+    >
+      {children || page}
+    </button>
+  );
+};
+
 /**
  * 分页组件 - 终端风格
  */
@@ -36,42 +71,6 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
 
     return pages;
-  };
-
-  const PageButton: React.FC<{
-    page: number | string;
-    isActive?: boolean;
-    disabled?: boolean;
-    onClick?: () => void;
-    children?: React.ReactNode;
-  }> = ({ page, isActive, disabled, onClick, children }) => {
-    const isEllipsis = page === '...';
-
-    if (isEllipsis) {
-      return (
-        <span className="px-3 py-2 text-muted">...</span>
-      );
-    }
-
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className={`
-          min-w-[40px] h-10 px-3 rounded-lg font-medium
-          transition-all duration-200
-          hover:bg-hover hover:text-white border border-white/5
-          ${isActive
-            ? 'bg-cyan text-muted'
-            : 'bg-elevated text-secondary'
-          }
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        `}
-      >
-        {children || page}
-      </button>
-    );
   };
 
   return (

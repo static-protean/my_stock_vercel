@@ -1,12 +1,5 @@
 import type React from 'react';
 
-interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  className?: string;
-}
-
 interface PageButtonProps {
   page: number | string;
   isActive?: boolean;
@@ -19,9 +12,7 @@ const PageButton: React.FC<PageButtonProps> = ({ page, isActive, disabled, onCli
   const isEllipsis = page === '...';
 
   if (isEllipsis) {
-    return (
-      <span className="px-3 py-2 text-muted">...</span>
-    );
+    return <span className="px-3 py-2 text-muted">...</span>;
   }
 
   return (
@@ -41,6 +32,13 @@ const PageButton: React.FC<PageButtonProps> = ({ page, isActive, disabled, onCli
     </button>
   );
 };
+
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}
 
 /**
  * 分页组件 - 终端风格

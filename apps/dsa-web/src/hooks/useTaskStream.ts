@@ -193,7 +193,7 @@ export function useTaskStream(options: UseTaskStreamOptions = {}): UseTaskStream
       setIsConnected(false);
       callbacksRef.current.onError?.(error);
 
-      // 自动重连
+      // 自动重连（通过 ref 避免闭包引用未声明的 connect）
       if (autoReconnect && enabled) {
         eventSource.close();
         reconnectTimeoutRef.current = setTimeout(() => {
@@ -212,7 +212,7 @@ export function useTaskStream(options: UseTaskStreamOptions = {}): UseTaskStream
     connectRef.current = connect;
   }, [connect]);
 
-  // 断开连接（defer setState 避免 effect 内同步 setState 触发级联渲染）
+  // 断开连接（setState 延后执行，避免 effect 内同步 setState 触发级联渲染）
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);

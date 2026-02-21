@@ -337,12 +337,12 @@ class Config:
                 os.environ['https_proxy'] = https_proxy
 
         
-        # 解析自选股列表（逗号分隔）
+        # 解析自选股列表（逗号分隔，统一为大写 Issue #355）
         stock_list_str = os.getenv('STOCK_LIST', '')
         stock_list = [
-            code.strip() 
-            for code in stock_list_str.split(',') 
-            if code.strip()
+            (c or "").strip().upper()
+            for c in stock_list_str.split(',')
+            if (c or "").strip()
         ]
         
         # 如果没有配置，使用默认的示例股票
@@ -594,12 +594,12 @@ class Config:
             stock_list_str = os.getenv('STOCK_LIST', '')
 
         stock_list = [
-            code.strip()
-            for code in stock_list_str.split(',')
-            if code.strip()
+            (c or "").strip().upper()
+            for c in stock_list_str.split(',')
+            if (c or "").strip()
         ]
 
-        if not stock_list:        
+        if not stock_list:
             stock_list = ['000001']
 
         self.stock_list = stock_list

@@ -74,6 +74,23 @@ def normalize_stock_code(stock_code: str) -> str:
     return code
 
 
+def canonical_stock_code(code: str) -> str:
+    """
+    Return the canonical (uppercase) form of a stock code.
+
+    This is a display/storage layer concern, distinct from normalize_stock_code
+    which strips exchange prefixes. Apply at system input boundaries to ensure
+    consistent case across BOT, WEB UI, API, and CLI paths (Issue #355).
+
+    Examples:
+        'aapl'    -> 'AAPL'
+        'AAPL'    -> 'AAPL'
+        '600519'  -> '600519'  (digits are unchanged)
+        'hk00700' -> 'HK00700'
+    """
+    return (code or "").strip().upper()
+
+
 class DataFetchError(Exception):
     """数据获取异常基类"""
     pass

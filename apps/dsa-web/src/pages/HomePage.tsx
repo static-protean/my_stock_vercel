@@ -224,8 +224,8 @@ const HomePage: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen grid overflow-hidden"
-      style={{ gridTemplateColumns: '12px 256px 12px 1fr 12px', gridTemplateRows: 'auto 1fr' }}
+      className="min-h-screen grid overflow-hidden max-w-7xl mx-auto w-full"
+      style={{ gridTemplateColumns: '12px 256px 24px 1fr 12px', gridTemplateRows: 'auto 1fr' }}
     >
       {/* 顶部输入栏 - 与历史记录框左对齐，与 Market Sentiment 外框右对齐（不含 col5 右 padding） */}
       <header

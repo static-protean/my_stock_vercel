@@ -582,7 +582,10 @@ def main() -> int:
             return 0
 
         # 模式3: 正常单次运行
-        run_full_analysis(config, args, stock_codes)
+        if config.run_immediately:
+            run_full_analysis(config, args, stock_codes)
+        else:
+            logger.info("配置为不立即运行分析 (RUN_IMMEDIATELY=false)")
 
         logger.info("\n程序执行完成")
 

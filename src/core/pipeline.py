@@ -400,7 +400,12 @@ class StockAnalysisPipeline:
                 'signal_reasons': trend_result.signal_reasons,
                 'risk_factors': trend_result.risk_factors,
             }
-        
+
+        # ETF/index flag for analyzer prompt (Fixes #274)
+        enhanced['is_index_etf'] = SearchService.is_index_or_etf(
+            context.get('code', ''), enhanced.get('stock_name', stock_name)
+        )
+
         return enhanced
     
     def _describe_volume_ratio(self, volume_ratio: float) -> str:

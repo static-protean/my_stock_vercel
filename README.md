@@ -36,6 +36,7 @@
 | 复盘 | 大盘复盘 | 每日市场概览、板块涨跌；支持 cn(A股)/us(美股)/both(两者) 切换 |
 | 图片识别 | 从图片添加 | 上传自选股截图，Vision LLM 自动提取股票代码，一键加入监控 |
 | 回测 | AI 回测验证 | 自动评估历史分析准确率，方向胜率、止盈止损命中率 |
+| **Agent 问股** | **策略对话** | **多轮策略问答，支持均线金叉/缠论/波浪等 11 种内置策略，Web/Bot/API 全链路** |
 | 推送 | 多渠道通知 | 企业微信、飞书、Telegram、钉钉、邮件、Pushover |
 | 自动化 | 定时运行 | GitHub Actions 定时执行，无需服务器 |
 
@@ -132,6 +133,9 @@
 | `WECHAT_MSG_TYPE` | 企微消息类型，默认 markdown，支持配置 text 类型，发送纯 markdown 文本 | 可选 |
 | `NEWS_MAX_AGE_DAYS` | 新闻最大时效（天），默认 3，避免使用过时信息 | 可选 |
 | `BIAS_THRESHOLD` | 乖离率阈值（%），默认 5.0，超过提示不追高；强势趋势股自动放宽 | 可选 |
+| `AGENT_MODE` | 开启 Agent 策略问股模式（`true`/`false`，默认 false） | 可选 |
+| `AGENT_MAX_STEPS` | Agent 最大推理步数（默认 10） | 可选 |
+| `AGENT_STRATEGY_DIR` | 自定义策略目录（默认内置 `strategies/`） | 可选 |
 
 #### 3. 启用 Actions
 
@@ -233,6 +237,19 @@ python main.py
 - 支持 JPG、PNG、WebP、GIF，单张最大 5MB；请求超时 60 秒
 
 **API 调用**：`POST /api/v1/stocks/extract-from-image`，表单字段 `file`，返回 `{ "codes": ["600519", "300750", ...] }`。详见 [完整指南](docs/full-guide.md)。
+
+### 🤖 Agent 策略问股
+
+在 `.env` 中设置 `AGENT_MODE=true` 后启动服务，访问 `/chat` 页面即可开始多轮策略问答。
+
+- **选择策略**：均线金叉、缠论、波浪理论、多头趋势等 11 种内置策略
+- **自然语言提问**：如「用缠论分析 600519」，Agent 自动调用实时行情、K线、技术指标、新闻等工具
+- **流式进度反馈**：实时展示 AI 思考路径（行情获取 → 技术分析 → 新闻搜索 → 生成结论）
+- **多轮对话**：支持追问上下文，会话历史持久化保存
+- **Bot 支持**：`/ask <code> [strategy]` 命令触发策略分析
+- **自定义策略**：在 `strategies/` 目录下新建 YAML 文件即可添加策略，无需写代码
+
+> **注意**：Agent 模式依赖外部 LLM（Gemini/OpenAI 等），每次对话会产生 API 调用费用。不影响非 Agent 模式（`AGENT_MODE=false` 或未设置）的正常运行。
 
 ### 启动方式
 

@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { HistoryItem, AnalysisReport, TaskInfo } from '../types/analysis';
 import { historyApi } from '../api/history';
 import { analysisApi, DuplicateTaskError } from '../api/analysis';
@@ -17,6 +18,7 @@ import { useTaskStream } from '../hooks';
  */
 const HomePage: React.FC = () => {
   const { setLoading, setError: setStoreError } = useAnalysisStore();
+  const navigate = useNavigate();
 
   // 输入状态
   const [stockCode, setStockCode] = useState('');
@@ -224,8 +226,8 @@ const HomePage: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen grid overflow-hidden max-w-7xl mx-auto w-full"
-      style={{ gridTemplateColumns: '12px 256px 24px 1fr 12px', gridTemplateRows: 'auto 1fr' }}
+      className="min-h-screen grid overflow-hidden w-full"
+      style={{ gridTemplateColumns: 'minmax(12px, 1fr) 256px 24px minmax(auto, 896px) minmax(12px, 1fr)', gridTemplateRows: 'auto 1fr' }}
     >
       {/* 顶部输入栏 - 与历史记录框左对齐，与 Market Sentiment 外框右对齐（不含 col5 右 padding） */}
       <header
@@ -299,6 +301,23 @@ const HomePage: React.FC = () => {
           </div>
         ) : selectedReport ? (
           <div className="max-w-4xl">
+            {/* Follow-up button */}
+            <div className="flex items-center justify-end mb-2">
+              <button
+                onClick={() => {
+                  const code = selectedReport.meta.stockCode;
+                  const name = selectedReport.meta.stockName;
+                  const qid = selectedReport.meta.queryId;
+                  navigate(`/chat?stock=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}&queryId=${encodeURIComponent(qid)}`);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan/10 border border-cyan/20 text-cyan text-sm hover:bg-cyan/20 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                追问 AI
+              </button>
+            </div>
             <ReportSummary data={selectedReport} isHistory />
           </div>
         ) : (

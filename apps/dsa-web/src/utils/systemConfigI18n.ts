@@ -8,7 +8,7 @@ const categoryTitleMap: Record<SystemConfigCategory, string> = {
   system: '系统设置',
   agent: 'Agent 设置',
   backtest: '回测配置',
-  uncategorized: '未分类',
+  uncategorized: '其他',
 };
 
 const categoryDescriptionMap: Partial<Record<SystemConfigCategory, string>> = {
@@ -19,7 +19,7 @@ const categoryDescriptionMap: Partial<Record<SystemConfigCategory, string>> = {
   system: '管理调度、日志、端口等系统级参数。',
   agent: '管理 Agent 模式、技能与策略配置。',
   backtest: '管理回测开关、评估窗口和引擎参数。',
-  uncategorized: '暂未归类的配置项。',
+  uncategorized: '其他未归类的配置项。',
 };
 
 const fieldTitleMap: Record<string, string> = {

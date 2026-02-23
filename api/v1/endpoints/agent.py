@@ -90,7 +90,8 @@ async def agent_chat(request: ChatRequest):
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: executor.chat(message=request.message, session_id=session_id),
+            lambda: executor.chat(message=request.message, session_id=session_id,
+                                  context=request.context),
         )
 
         return ChatResponse(

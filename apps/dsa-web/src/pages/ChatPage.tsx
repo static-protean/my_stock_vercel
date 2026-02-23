@@ -174,9 +174,9 @@ const ChatPage: React.FC = () => {
           try {
             const event = JSON.parse(line.slice(6)) as ProgressStep;
             if (event.type === 'done') {
-              const doneEvent = event as unknown as { type: string; success: boolean; content?: string };
+              const doneEvent = event as unknown as { type: string; success: boolean; content?: string; error?: string };
               if (doneEvent.success === false) {
-                throw new Error(`❌ 分析失败: ${doneEvent.content || '大模型调用出错，请检查 API Key 配置'}`);
+                throw new Error(`❌ 分析失败: ${doneEvent.error || doneEvent.content || '大模型调用出错，请检查 API Key 配置'}`);
               }
               finalContent = doneEvent.content ?? '';
             } else if (event.type === 'error') {

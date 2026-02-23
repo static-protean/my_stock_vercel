@@ -20,7 +20,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 from json_repair import repair_json
 
-from src.agent.llm_adapter import LLMToolAdapter, LLMResponse, ToolCall
+from src.agent.llm_adapter import LLMToolAdapter
 from src.agent.tools.registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -438,7 +438,7 @@ class AgentExecutor:
                 if not tool_calls_log:
                     thinking_msg = "正在制定分析路径..."
                 else:
-                    last_tool = tool_calls_log[-1].get("name", "")
+                    last_tool = tool_calls_log[-1].get("tool", "")
                     label = _THINKING_TOOL_LABELS.get(last_tool, last_tool)
                     thinking_msg = f"「{label}」已完成，继续深入分析..."
                 progress_callback({"type": "thinking", "step": step + 1, "message": thinking_msg})

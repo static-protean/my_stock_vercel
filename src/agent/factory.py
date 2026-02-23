@@ -35,6 +35,12 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 _TOOL_REGISTRY = None
 _SKILL_MANAGER_PROTOTYPE = None
+# Sentinel used as initial value so None (i.e. no custom dir) compares as "changed"
+# on the very first call, forcing a build rather than accidentally skipping it.
+_SENTINEL = object()
+# Track which custom_dir the prototype was built with so we can invalidate
+# the cache if AGENT_STRATEGY_DIR changes at runtime (e.g. via config reload).
+_SKILL_MANAGER_CUSTOM_DIR: object = _SENTINEL
 
 DEFAULT_AGENT_SKILLS = [
     "bull_trend",
@@ -72,28 +78,37 @@ def get_skill_manager(config=None):
     return ``copy.deepcopy(prototype)`` which is ~10× faster than re-reading
     YAML files.  Each clone is independent so ``.activate()`` calls do not
     bleed between requests.
+
+    Cache invalidation: if ``config.agent_strategy_dir`` changes at runtime
+    (e.g. via the web settings reload), the prototype is rebuilt automatically.
     """
-    global _SKILL_MANAGER_PROTOTYPE
-    if _SKILL_MANAGER_PROTOTYPE is not None:
-        return copy.deepcopy(_SKILL_MANAGER_PROTOTYPE)
+    global _SKILL_MANAGER_PROTOTYPE, _SKILL_MANAGER_CUSTOM_DIR
 
     if config is None:
         from src.config import get_config
         config = get_config()
 
+    current_custom_dir = getattr(config, "agent_strategy_dir", None)
+    if _SKILL_MANAGER_PROTOTYPE is not None and current_custom_dir == _SKILL_MANAGER_CUSTOM_DIR:
+        return copy.deepcopy(_SKILL_MANAGER_PROTOTYPE)
+
     from src.agent.skills.base import SkillManager
+
+    if _SKILL_MANAGER_PROTOTYPE is not None:
+        logger.info("[AgentFactory] SkillManager prototype invalidated (agent_strategy_dir changed: %r → %r)",
+                    _SKILL_MANAGER_CUSTOM_DIR, current_custom_dir)
 
     skill_manager = SkillManager()
     skill_manager.load_builtin_strategies()
 
-    custom_dir = getattr(config, "agent_strategy_dir", None)
-    if custom_dir:
+    if current_custom_dir:
         try:
-            skill_manager.load_custom_strategies(custom_dir)
+            skill_manager.load_custom_strategies(current_custom_dir)
         except Exception as exc:
-            logger.warning("[AgentFactory] Failed to load custom strategies from %s: %s", custom_dir, exc)
+            logger.warning("[AgentFactory] Failed to load custom strategies from %s: %s", current_custom_dir, exc)
 
     _SKILL_MANAGER_PROTOTYPE = skill_manager
+    _SKILL_MANAGER_CUSTOM_DIR = current_custom_dir
     logger.info("[AgentFactory] SkillManager prototype cached (%d strategies)", len(skill_manager._skills))
     return copy.deepcopy(_SKILL_MANAGER_PROTOTYPE)
 

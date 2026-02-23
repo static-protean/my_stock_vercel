@@ -622,6 +622,8 @@ class GeminiAnalyzer:
             client_kwargs = {"api_key": config.openai_api_key}
             if config.openai_base_url and config.openai_base_url.startswith('http'):
                 client_kwargs["base_url"] = config.openai_base_url
+            if config.openai_base_url and "aihubmix.com" in config.openai_base_url:
+                client_kwargs["default_headers"] = {"APP-Code": "GPIJ3886"}
 
             self._openai_client = OpenAI(**client_kwargs)
             self._current_model_name = config.openai_model

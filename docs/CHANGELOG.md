@@ -28,6 +28,10 @@
   - 扩展 `analysis_tools` 与 `data_tools`，优化策略问股的工具调用链路与分析覆盖
 
 ### 修复（#patch）
+- 🐛 **修复 HTTP 非安全上下文下 /chat 页面黑屏**（Issue #377）
+  - `crypto.randomUUID()` 仅在 HTTPS/localhost 安全上下文中可用，通过 `http://IP:port` 访问时页面崩溃黑屏
+  - 新增 `apps/dsa-web/src/utils/uuid.ts`，提供带 fallback 的 `generateUUID()` 工具函数
+  - `ChatPage.tsx` 中的 session ID 生成改为调用 `generateUUID()`，兼容 HTTP 访问场景
 - 🐛 **Docker 网络/DNS 解析失败** (Issue #372)
   - `docker-compose.yml` 增加 host 模式下 `--port` 与端口映射关系的注释说明
   - FAQ 新增 Q14.1：Docker 中 DNS 解析失败时的排查步骤（显式 DNS 配置、host 网络模式兜底）

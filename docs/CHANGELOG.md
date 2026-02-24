@@ -8,6 +8,13 @@
 ## [Unreleased]
 
 ### 新增（#minor）
+- 📅 **交易日判断**（Issue #373）
+  - 默认非交易日不执行分析，按 A 股 / 港股 / 美股各自交易日历区分
+  - 混合持仓时，每只股票只在其市场开市日分析，休市股票当日跳过
+  - 全部相关市场休市时，整体跳过执行（不启动 pipeline、不发推送）
+  - 依赖 `exchange-calendars`（A 股 XSHG、港股 XHKG、美股 XNYS）
+  - 配置项：`TRADING_DAY_CHECK_ENABLED`（默认 `true`）
+  - 覆盖方式：`--force-run` 或 `TRADING_DAY_CHECK_ENABLED=false`
 - 🤖 **Agent 策略问股**（全链路，#367）
   - **API**：新增 `/api/v1/agent/strategies`（获取策略列表）与 `/api/v1/agent/chat/stream`（SSE 流式对话）
   - **核心**：`src/agent/`（AgentExecutor ReAct 循环、LLMToolAdapter 多厂商适配、ConversationManager 会话持久化、ToolRegistry 工具注册）

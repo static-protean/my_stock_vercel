@@ -139,6 +139,7 @@
 | `AGENT_MODE` | 开启 Agent 策略问股模式（`true`/`false`，默认 false） | 可选 |
 | `AGENT_MAX_STEPS` | Agent 最大推理步数（默认 10） | 可选 |
 | `AGENT_STRATEGY_DIR` | 自定义策略目录（默认内置 `strategies/`） | 可选 |
+| `TRADING_DAY_CHECK_ENABLED` | 交易日检查（默认 `true`）：非交易日跳过执行；设为 `false` 或使用 `--force-run` 强制执行 | 可选 |
 
 #### 3. 启用 Actions
 
@@ -150,7 +151,7 @@
 
 #### 完成
 
-默认每个**工作日 18:00（北京时间）**自动执行，也可手动触发
+默认每个**工作日 18:00（北京时间）**自动执行，也可手动触发。默认非交易日（含 A/H/US 节假日）不执行；可使用 `TRADING_DAY_CHECK_ENABLED=false` 或 `--force-run` 强制执行。
 
 ### 方式二：本地运行 / Docker 部署
 

@@ -29,6 +29,11 @@
   - 扩展 `analysis_tools` 与 `data_tools`，优化策略问股的工具调用链路与分析覆盖
 
 ### 修复（#patch）
+- 🐛 **支持 DeepSeek 思考模式**（Issue #379）
+  - 根因：Agent 模式（tool calls）下使用 DeepSeek 思考模式时，未在 assistant 消息中回传 `reasoning_content`，导致 API 返回 400
+  - 修复：`llm_adapter._call_openai` 解析并透传 `reasoning_content`；`executor` 在 assistant_msg 中写入该字段
+  - 按模型名自动识别：`deepseek-reasoner`、`deepseek-r1`、`qwq` 等自动返回 reasoning_content，不发送 extra_body；`deepseek-chat` 需显式启用，系统自动处理
+  - 兼容性：非 DeepSeek 提供商不受影响；用户无需配置，无破坏性变更
 - 🐛 **Agent 模式下报告页「相关资讯」为空**（Issue #396）
   - 根因：Agent 工具结果仅用于 LLM 上下文，未写入 `news_intel`，前端 `GET /api/v1/history/{query_id}/news` 查询不到数据
   - 修复：在 `_analyze_with_agent` 中 Agent 运行结束后，调用 `search_stock_news` 并持久化（仅 1 次 API 调用，与 Agent 工具逻辑一致，无额外延迟）

@@ -605,6 +605,7 @@ GEMINI_MODEL=gemini-3-flash-preview
 OPENAI_API_KEY=xxx
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
+# 思考模式：deepseek-reasoner、deepseek-r1、qwq 等自动识别；deepseek-chat 系统按模型名自动启用
 ```
 
 ### 调试模式

@@ -185,6 +185,7 @@ PROXY_PORT=10809
 OPENAI_API_KEY=sk-xxxxxxxx
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
+# 思考模式：deepseek-reasoner、deepseek-r1、qwq 等自动识别；deepseek-chat 系统按模型名自动启用
 ```
 
 支持的模型服务：

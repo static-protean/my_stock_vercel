@@ -82,7 +82,7 @@ class Config:
     openai_model: str = "gpt-4o-mini"  # OpenAI 兼容模型名称
     openai_vision_model: Optional[str] = None  # Vision 专用模型（可选，不配置则用 openai_model；部分模型如 DeepSeek 不支持图像）
     openai_temperature: float = 0.7  # OpenAI 温度参数（0.0-2.0，默认0.7）
-    
+
     # === 搜索引擎配置（支持多 Key 负载均衡）===
     bocha_api_keys: List[str] = field(default_factory=list)  # Bocha API Keys
     tavily_api_keys: List[str] = field(default_factory=list)  # Tavily API Keys

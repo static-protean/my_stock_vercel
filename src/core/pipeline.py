@@ -456,6 +456,29 @@ class StockAnalysisPipeline:
             # 转换为 AnalysisResult
             result = self._agent_result_to_analysis_result(agent_result, code, stock_name, report_type, query_id)
 
+            # 保存新闻情报到数据库（Agent 工具结果仅用于 LLM 上下文，未持久化，Fixes #396）
+            # 使用 search_stock_news（与 Agent 工具调用逻辑一致），仅 1 次 API 调用，无额外延迟
+            if self.search_service.is_available:
+                try:
+                    news_response = self.search_service.search_stock_news(
+                        stock_code=code,
+                        stock_name=stock_name,
+                        max_results=5
+                    )
+                    if news_response.success and news_response.results:
+                        query_context = self._build_query_context(query_id=query_id)
+                        self.db.save_news_intel(
+                            code=code,
+                            name=stock_name,
+                            dimension="latest_news",
+                            query=news_response.query,
+                            response=news_response,
+                            query_context=query_context
+                        )
+                        logger.info(f"[{code}] Agent 模式: 新闻情报已保存 {len(news_response.results)} 条")
+                except Exception as e:
+                    logger.warning(f"[{code}] Agent 模式保存新闻情报失败: {e}")
+
             # 保存分析历史记录
             if result:
                 try:

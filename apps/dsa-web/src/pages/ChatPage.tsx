@@ -88,14 +88,14 @@ const ChatPage: React.FC = () => {
     if (initialFollowUpHandled.current) return;
     const stock = searchParams.get('stock');
     const name = searchParams.get('name');
-    const queryId = searchParams.get('queryId');
+    const recordId = searchParams.get('recordId');
     if (stock) {
       initialFollowUpHandled.current = true;
       const displayName = name ? `${name}(${stock})` : stock;
       setInput(`请深入分析 ${displayName}`);
       // Load previous report context for data reuse
-      if (queryId) {
-        historyApi.getDetail(queryId).then((report) => {
+      if (recordId) {
+        historyApi.getDetail(Number(recordId)).then((report) => {
           const ctx: FollowUpContext = { stock_code: stock, stock_name: name };
           if (report.summary) ctx.previous_analysis_summary = report.summary;
           if (report.strategy) ctx.previous_strategy = report.strategy;

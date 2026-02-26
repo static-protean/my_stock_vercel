@@ -117,6 +117,27 @@
   - 首次访问在网页设置初始密码；支持「系统设置 > 修改密码」和 CLI `python -m src.auth reset_password` 重置
 
 ## [3.2.6] - 2026-02-20
+### ⚠️ 破坏性变更（Breaking Changes）
+
+- **历史记录 API 变更 (Issue #322)**
+  - 路由变更：`GET /api/v1/history/{query_id}` → `GET /api/v1/history/{record_id}`
+  - 参数变更：`query_id` (字符串) → `record_id` (整数)
+  - 新闻接口变更：`GET /api/v1/history/{query_id}/news` → `GET /api/v1/history/{record_id}/news`
+  - 原因：`query_id` 在批量分析时可能重复，无法唯一标识单条历史记录。改用数据库主键 `id` 确保唯一性
+  - 影响范围：使用旧版历史详情 API 的所有客户端需同步更新
+
+### 修复
+- 修复美股（如 ADBE）技术指标矛盾：akshare 美股复权数据异常，统一美股历史数据源为 YFinance（Issue #311）
+- 🐛 **历史记录查询和显示问题 (Issue #322)**
+  - 修复历史记录列表查询中日期不一致问题：使用明天作为 endDate，确保包含今天全天的数据
+  - 修复服务器 UI 报告选择问题：原因是多条记录共享同一 `query_id`，导致总是显示第一条。现改用 `analysis_history.id` 作为唯一标识
+  - 历史详情、新闻接口及前端组件已全面适配 `record_id`
+  - 新增后台轮询（每 30s）与页面可见性变更时静默刷新历史列表，确保 CLI 发起的分析完成后前端能及时同步，使用 `silent` 模式避免触发 loading 状态
+- 🐛 **美股指数实时行情与日线数据** (Issue #273)
+  - 修复 SPX、DJI、IXIC、NDX、VIX、RUT 等美股指数无法获取实时行情的问题
+  - 新增 `us_index_mapping` 模块，将用户输入（如 SPX）映射为 Yahoo Finance 符号（如 ^GSPC）
+  - 美股指数与美股股票日线数据直接路由至 YfinanceFetcher，避免遍历不支持的数据源
+  - 消除重复的美股识别逻辑，统一使用 `is_us_stock_code()` 函数
 
 ### 优化
 - 🎨 **首页输入栏与 Market Sentiment 布局对齐优化**

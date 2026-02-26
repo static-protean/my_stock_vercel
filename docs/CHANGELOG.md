@@ -36,6 +36,12 @@
   - **流水线接入**：`AGENT_MODE=true` 时 pipeline 自动路由至 Agent 分析分支，向下兼容
   - **配置项**：`AGENT_MODE`、`AGENT_MAX_STEPS`、`AGENT_STRATEGY_DIR`
   - **兼容性**：`AGENT_MODE` 默认 false，不影响现有非 Agent 模式；回滚只需将 `AGENT_MODE` 设为 false
+- 💬 **聊天历史持久化**（Issue #400）
+  - `/chat` 页面支持会话历史记录，刷新或重新进入页面后可恢复之前的对话
+  - 侧边栏展示历史会话列表，支持切换、新建和删除会话（含二次确认）
+  - 后端新增 3 个 REST API：会话列表、会话消息查询、会话删除
+  - 基于已有 `conversation_messages` 表聚合，无需数据库迁移
+  - `session_id` 通过 localStorage 持久化，跨页面刷新保持会话连续性
 - ⚙️ **Agent 工具链能力增强**
   - 扩展 `analysis_tools` 与 `data_tools`，优化策略问股的工具调用链路与分析覆盖
 - 📡 **LiteLLM Proxy 接入**

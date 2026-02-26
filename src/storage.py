@@ -1194,7 +1194,7 @@ class DatabaseManager:
             
             if valid_numbers:
                 try:
-                    return float(valid_numbers[-1])
+                    return abs(float(valid_numbers[-1]))
                 except ValueError:
                     pass
         return None

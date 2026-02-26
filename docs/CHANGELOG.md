@@ -34,6 +34,11 @@
   - **兼容性**：`AGENT_MODE` 默认 false，不影响现有非 Agent 模式；回滚只需将 `AGENT_MODE` 设为 false
 - ⚙️ **Agent 工具链能力增强**
   - 扩展 `analysis_tools` 与 `data_tools`，优化策略问股的工具调用链路与分析覆盖
+- 📡 **LiteLLM Proxy 接入**
+  - 支持通过 LiteLLM Proxy 统一路由 Gemini、DeepSeek、Claude 等模型，自动处理 Reasoning 模型透传
+  - 新增 `docs/LITELLM_PROXY_SETUP.md` 接入指南、`litellm_config.yaml.example` 示例配置
+  - `.env` 方案五：`OPENAI_BASE_URL` + `OPENAI_API_KEY` + `OPENAI_MODEL` 指向 Proxy
+  - OpenAI 兼容 API Key 长度校验放宽为 `>= 8`，支持 LiteLLM 本地开发常用短 Key
 
 ### 修复（#patch）
 - 🐛 **Agent 策略渲染遗漏 framework 分类**（Issue #403）
@@ -46,6 +51,10 @@
   - 修复：`llm_adapter._call_openai` 解析并透传 `reasoning_content`；`executor` 在 assistant_msg 中写入该字段
   - 按模型名自动识别：`deepseek-reasoner`、`deepseek-r1`、`qwq` 等自动返回 reasoning_content，不发送 extra_body；`deepseek-chat` 需显式启用，系统自动处理
   - 兼容性：非 DeepSeek 提供商不受影响；用户无需配置，无破坏性变更
+- 🐛 **Agent Reasoning 400 修复**（Fixes #409）
+  - 根因：Gemini 3、DeepSeek 等 Reasoning 模型在工具调用响应中返回 `thought_signature`，多轮对话未回传导致代理返回 400
+  - 修复：`llm_adapter._call_openai` 解析并透传 `provider_specific_fields.thought_signature`；`executor` 在 assistant_msg 的 tool_calls 中写入该字段
+  - 兼容性：非 Reasoning 模型不受影响；与 LiteLLM Proxy 及其他 OpenAI 兼容代理兼容
 - 🐛 **Agent 模式下报告页「相关资讯」为空**（Issue #396）
   - 根因：Agent 工具结果仅用于 LLM 上下文，未写入 `news_intel`，前端 `GET /api/v1/history/{query_id}/news` 查询不到数据
   - 修复：在 `_analyze_with_agent` 中 Agent 运行结束后，调用 `search_stock_news` 并持久化（仅 1 次 API 调用，与 Agent 工具逻辑一致，无额外延迟）
@@ -83,6 +92,8 @@
 ### 文档（#skip）
 - 📝 **Agent 文档补充**
   - 更新 `README.md`、`docs/README_EN.md`、`docs/README_CHT.md` 与 changelog，补充策略问股使用说明与测试说明
+- 📝 **LiteLLM Proxy 文档**
+  - 更新 `docs/full-guide.md`、`README.md`、`.env.example`，补充 LiteLLM Proxy 配置说明与冲突警告
 
 ## [3.2.11] - 2026-02-23
 

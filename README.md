@@ -44,7 +44,7 @@
 
 | 类型 | 支持 |
 |------|------|
-| AI 模型 | [AIHubMix](https://aihubmix.com/?aff=CfMq)、Gemini（免费）、OpenAI 兼容、DeepSeek、通义千问、Claude、Ollama |
+| AI 模型 | [AIHubMix](https://aihubmix.com/?aff=CfMq)、Gemini（免费）、OpenAI 兼容、DeepSeek、通义千问、Claude、Ollama、LiteLLM Proxy |
 | 行情数据 | AkShare、Tushare、Pytdx、Baostock、YFinance |
 | 新闻搜索 | Tavily、SerpAPI、Bocha、Brave |
 

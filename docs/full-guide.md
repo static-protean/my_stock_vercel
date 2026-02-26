@@ -613,6 +613,15 @@ OPENAI_MODEL=deepseek-chat
 # 思考模式：deepseek-reasoner、deepseek-r1、qwq 等自动识别；deepseek-chat 系统按模型名自动启用
 ```
 
+### LiteLLM Proxy（统一多模型网关）
+
+通过 LiteLLM Proxy 可在一个 OpenAI 兼容接口后统一路由 Gemini、DeepSeek、Claude 等模型，并自动处理 Reasoning 模型（Gemini 3 等）的 `thought_signature` 透传，避免多轮工具调用 400 错误。
+
+详见 [LiteLLM Proxy 接入指南](LITELLM_PROXY_SETUP.md)。
+
+> ⚠️ 使用 LiteLLM Proxy 时须清空 `GEMINI_API_KEY`、`ANTHROPIC_API_KEY`、`AIHUBMIX_KEY`，
+> 仅保留 `OPENAI_BASE_URL` + `OPENAI_API_KEY` + `OPENAI_MODEL`，否则系统优先走原生 SDK 绕过 Proxy。
+
 ### 调试模式
 
 ```bash

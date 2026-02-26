@@ -8,6 +8,10 @@
 ## [Unreleased]
 
 ### 新增（#minor）
+- 🚀 **桌面端 CI 自动发布到 GitHub Releases**
+  - 新增 `.github/workflows/desktop-release.yml`
+  - 支持 Windows 安装包（exe）+ 免安装包（zip）与 macOS x64/arm64 DMG 并行构建
+  - 支持 tag 触发自动发布，以及手动指定 `release_tag` 发布
 - 📈 **盘中实时技术面**（Issue #234）
   - 技术面数据（MA5/MA10/MA20、多头排列）使用盘中实时价格计算，而非昨日收盘
   - 盘中分析时，将实时价作为虚拟 K 线追加到历史序列，重算均线与趋势判断
@@ -41,6 +45,11 @@
   - OpenAI 兼容 API Key 长度校验放宽为 `>= 8`，支持 LiteLLM 本地开发常用短 Key
 
 ### 修复（#patch）
+- 🐛 **修复桌面端打包后 FastAPI 缺少 `python-multipart`**
+  - 现象：桌面客户端启动时报错 `Form data requires "python-multipart" to be installed`
+  - 根因：`python-multipart` 由 FastAPI 在运行时检查，且 Windows 打包脚本中 `pip` 与 `pyinstaller` 可能来自不同 Python 环境，导致 `multipart` 未被收录
+  - 修复：为后端打包流程补充 `multipart` / `multipart.multipart` 隐式导入，并统一改为 `python -m PyInstaller`（Windows / macOS 打包脚本）
+  - 兼容性：无破坏性变更，仅影响桌面端打包产物
 - 🐛 **Agent 策略渲染遗漏 framework 分类**（Issue #403）
   - 根因：`get_skill_instructions()` 仅遍历 `trend/pattern/reversal` 三个分类，`category: framework` 的 4 个策略（箱体震荡、缠论、波浪理论、情绪周期）被静默丢弃
   - 修复：补充 `framework` 分类，并增加动态回退机制，确保未来自定义分类不会遗漏

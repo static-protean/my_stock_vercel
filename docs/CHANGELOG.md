@@ -15,6 +15,7 @@
   - 配置项：`ENABLE_REALTIME_TECHNICAL_INDICATORS`（默认 `true`）；设为 `false` 可回退为昨日收盘逻辑
   - 非交易日或 `enable_realtime_quote` 关闭时保持原有行为
 - 📢 **PushPlus 群组推送**：新增 `PUSHPLUS_TOPIC` 配置项，支持一对多群组推送，配置群组编码后消息推送给群组所有订阅用户
+- 📢 **Discord 分段发送**：新增 `DISCORD_MAX_WORDS` 配置项，支持将长文字按段落或字数只能分割后，分段发送。
 - 📅 **交易日判断**（Issue #373）
   - 默认非交易日不执行分析，按 A 股 / 港股 / 美股各自交易日历区分
   - 混合持仓时，每只股票只在其市场开市日分析，休市股票当日跳过

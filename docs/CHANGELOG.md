@@ -7,6 +7,11 @@
 
 ## [Unreleased]
 
+### 修复（#patch）
+- 🐛 **设置页保存按钮误亮**（Issue #417）
+  - Chrome 自动填充密码到 `type="password"` 输入框，触发 dirty 状态误判
+  - 密码输入框初始设为 readOnly，用户聚焦时解除，阻止浏览器自动填充
+
 ### 新增（#minor）
 - 🚀 **桌面端 CI 自动发布到 GitHub Releases**
   - 新增 `.github/workflows/desktop-release.yml`

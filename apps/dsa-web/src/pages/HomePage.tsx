@@ -40,6 +40,7 @@ const HomePage: React.FC = () => {
   // 任务队列状态
   const [activeTasks, setActiveTasks] = useState<TaskInfo[]>([]);
   const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // 用于跟踪当前分析请求，避免竞态条件
   const analysisRequestIdRef = useRef<number>(0);
@@ -274,16 +275,42 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const sidebarContent = (
+    <div className="flex flex-col gap-3 overflow-hidden min-h-0 h-full">
+      <TaskPanel tasks={activeTasks} />
+      <HistoryList
+        items={historyItems}
+        isLoading={isLoadingHistory}
+        isLoadingMore={isLoadingMore}
+        hasMore={hasMore}
+        selectedId={selectedReport?.meta.id}
+        onItemClick={(id) => { handleHistoryClick(id); setSidebarOpen(false); }}
+        onLoadMore={handleLoadMore}
+        className="max-h-[62vh] md:max-h-[62vh] flex-1 overflow-hidden"
+      />
+    </div>
+  );
+
   return (
     <div
-      className="min-h-screen grid overflow-hidden w-full"
+      className="min-h-screen flex flex-col md:grid overflow-hidden w-full"
       style={{ gridTemplateColumns: 'minmax(12px, 1fr) 256px 24px minmax(auto, 896px) minmax(12px, 1fr)', gridTemplateRows: 'auto 1fr' }}
     >
-      {/* 顶部输入栏 - 与历史记录框左对齐，与 Market Sentiment 外框右对齐（不含 col5 右 padding） */}
+      {/* 顶部输入栏 */}
       <header
-        className="col-start-2 col-end-5 row-start-1 py-3 border-b border-white/5 flex-shrink-0 flex items-center min-w-0 overflow-hidden"
+        className="md:col-start-2 md:col-end-5 md:row-start-1 py-3 px-3 md:px-0 border-b border-white/5 flex-shrink-0 flex items-center min-w-0 overflow-hidden"
       >
         <div className="flex items-center gap-2 w-full min-w-0 flex-1" style={{ maxWidth: 'min(100%, 1168px)' }}>
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-white/10 transition-colors text-secondary hover:text-white flex-shrink-0"
+            title="历史记录"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <div className="flex-1 relative min-w-0">
             <input
               type="text"
@@ -325,25 +352,26 @@ const HomePage: React.FC = () => {
         </div>
       </header>
 
-      {/* 左侧：任务面板 + 历史列表 */}
-      <div
-        className="col-start-2 row-start-2 flex flex-col gap-3 overflow-hidden min-h-0"
-      >
-        <TaskPanel tasks={activeTasks} />
-        <HistoryList
-          items={historyItems}
-          isLoading={isLoadingHistory}
-          isLoadingMore={isLoadingMore}
-          hasMore={hasMore}
-          selectedId={selectedReport?.meta.id}
-          onItemClick={handleHistoryClick}
-          onLoadMore={handleLoadMore}
-          className="max-h-[62vh] overflow-hidden"
-        />
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex col-start-2 row-start-2 flex-col gap-3 overflow-hidden min-h-0">
+        {sidebarContent}
       </div>
 
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setSidebarOpen(false)}>
+          <div className="absolute inset-0 bg-black/60" />
+          <div
+            className="absolute left-0 top-0 bottom-0 w-72 flex flex-col glass-card overflow-hidden border-r border-white/10 shadow-2xl p-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+
       {/* 右侧报告详情 */}
-      <section className="col-start-4 row-start-2 flex-1 overflow-y-auto pl-1 min-w-0 min-h-0">
+      <section className="md:col-start-4 md:row-start-2 flex-1 overflow-y-auto overflow-x-auto px-3 md:px-0 md:pl-1 min-w-0 min-h-0">
         {isLoadingReport ? (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="w-10 h-10 border-3 border-cyan/20 border-t-cyan rounded-full animate-spin" />

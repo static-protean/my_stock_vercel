@@ -59,6 +59,11 @@
   - OpenAI 兼容 API Key 长度校验放宽为 `>= 8`，支持 LiteLLM 本地开发常用短 Key
 
 ### 修复（#patch）
+- 🐛 **移动端首页无法滑动查看溢出内容**（Issue #419）
+  - 现象：手机浏览器访问首页时，报告内容超出屏幕但无法左右滑动，也没有滚动条
+  - 根因：外层容器 `overflow-hidden` 禁止所有溢出滚动；5 列 CSS Grid 为固定宽度，无移动端断点适配
+  - 修复：移动端改为单列 Flex 布局，左侧边栏改为抽屉式弹出（与问股页面一致），报告区域添加 `overflow-x-auto` 允许横向滚动
+  - 兼容性：桌面端布局无变化
 - 🐛 **修复桌面端打包后 FastAPI 缺少 `python-multipart`**
   - 现象：桌面客户端启动时报错 `Form data requires "python-multipart" to be installed`
   - 根因：`python-multipart` 由 FastAPI 在运行时检查，且 Windows 打包脚本中 `pip` 与 `pyinstaller` 可能来自不同 Python 环境，导致 `multipart` 未被收录

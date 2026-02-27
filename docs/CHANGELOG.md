@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### 修复（#patch）
+- 🐛 **首页历史记录列表滚动跳回顶部**（Issue #429）
+  - `fetchHistory` 引用不稳定导致加载更多后 useEffect 重新执行 reset 列表
+  - 改用 `useRef` 追踪易变状态，稳定 `fetchHistory` 引用；后台刷新合并新增项而非替换整个列表
 - 🐛 **设置页保存按钮误亮**（Issue #417）
   - Chrome 自动填充密码到 `type="password"` 输入框，触发 dirty 状态误判
   - 密码输入框初始设为 readOnly，用户聚焦时解除，阻止浏览器自动填充

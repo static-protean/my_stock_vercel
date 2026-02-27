@@ -91,7 +91,15 @@ const HomePage: React.FC = () => {
     enabled: true,
   });
 
-// 加载历史列表
+// 用 ref 追踪易变状态，避免 fetchHistory 频繁重建导致 effect 循环
+  const currentPageRef = useRef(currentPage);
+  currentPageRef.current = currentPage;
+  const historyItemsRef = useRef(historyItems);
+  historyItemsRef.current = historyItems;
+  const selectedReportRef = useRef(selectedReport);
+  selectedReportRef.current = selectedReport;
+
+  // 加载历史列表
   const fetchHistory = useCallback(async (autoSelectFirst = false, reset = true, silent = false) => {
     if (!silent) {
       if (reset) {
@@ -100,12 +108,9 @@ const HomePage: React.FC = () => {
       } else {
         setIsLoadingMore(true);
       }
-    } else if (reset) {
-      // Silent reset still needs page reset for correct API call
-      setCurrentPage(1);
     }
 
-    const page = reset ? 1 : currentPage + 1;
+    const page = reset ? 1 : currentPageRef.current + 1;
 
     try {
       // TODO: Proper timezone handling needed
@@ -115,7 +120,7 @@ const HomePage: React.FC = () => {
       // or construct endDate on frontend as end-of-day timestamp.
       const tomorrowDate = new Date();
       tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-      
+
       const response = await historyApi.getList({
         startDate: getRecentStartDate(30),
         endDate: toDateInputValue(tomorrowDate),
@@ -123,19 +128,29 @@ const HomePage: React.FC = () => {
         limit: pageSize,
       });
 
-      if (reset) {
+      if (silent && reset) {
+        // 后台刷新：合并新增项到列表顶部，保留已加载的分页数据和滚动位置
+        setHistoryItems(prev => {
+          const existingIds = new Set(prev.map(item => item.id));
+          const newItems = response.items.filter(item => !existingIds.has(item.id));
+          return newItems.length > 0 ? [...newItems, ...prev] : prev;
+        });
+      } else if (reset) {
         setHistoryItems(response.items);
+        setCurrentPage(1);
       } else {
         setHistoryItems(prev => [...prev, ...response.items]);
+        setCurrentPage(page);
       }
 
       // 判断是否还有更多数据
-      const totalLoaded = reset ? response.items.length : historyItems.length + response.items.length;
-      setHasMore(totalLoaded < response.total);
-      setCurrentPage(page);
+      if (!silent) {
+        const totalLoaded = reset ? response.items.length : historyItemsRef.current.length + response.items.length;
+        setHasMore(totalLoaded < response.total);
+      }
 
       // 如果需要自动选择第一条，且有数据，且当前没有选中报告
-      if (autoSelectFirst && response.items.length > 0 && !selectedReport) {
+      if (autoSelectFirst && response.items.length > 0 && !selectedReportRef.current) {
         const firstItem = response.items[0];
         setIsLoadingReport(true);
         try {
@@ -153,7 +168,7 @@ const HomePage: React.FC = () => {
       setIsLoadingHistory(false);
       setIsLoadingMore(false);
     }
-  }, [selectedReport, currentPage, historyItems.length, pageSize]);
+  }, [pageSize]);
 
   // 加载更多历史记录
   const handleLoadMore = useCallback(() => {
@@ -162,20 +177,23 @@ const HomePage: React.FC = () => {
     }
   }, [fetchHistory, isLoadingMore, hasMore]);
 
-  // 初始加载 - 自动选择第一条
+  // 初始加载 - 自动选择第一条（仅挂载时执行一次）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchHistory(true);
-  }, [fetchHistory]);
+  }, []);
 
   // Background polling: re-fetch history every 30s for CLI-initiated analyses
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const interval = setInterval(() => {
       fetchHistory(false, true, true);
     }, 30_000);
     return () => clearInterval(interval);
-  }, [fetchHistory]);
+  }, []);
 
   // Refresh when tab regains visibility (e.g. user ran main.py in another terminal)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -184,7 +202,7 @@ const HomePage: React.FC = () => {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [fetchHistory]);
+  }, []);
 
   // 点击历史项加载报告
   const handleHistoryClick = async (recordId: number) => {

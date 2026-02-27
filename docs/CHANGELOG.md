@@ -81,7 +81,11 @@
   - 兼容性：非 DeepSeek 提供商不受影响；用户无需配置，无破坏性变更
 - 🐛 **Agent Reasoning 400 修复**（Fixes #409）
   - 根因：Gemini 3、DeepSeek 等 Reasoning 模型在工具调用响应中返回 `thought_signature`，多轮对话未回传导致代理返回 400
-  - 修复：`llm_adapter._call_openai` 解析并透传 `provider_specific_fields.thought_signature`；`executor` 在 assistant_msg 的 tool_calls 中写入该字段
+  - 修复（OpenAI 兼容路径）：`llm_adapter._call_openai` 解析并透传 `provider_specific_fields.thought_signature`；`executor` 在 assistant_msg 的 tool_calls 中写入该字段
+  - 修复（原生 Gemini 路径）：`llm_adapter._call_gemini` 迁移至 `google-genai` 新 SDK（旧 `google-generativeai` SDK 不定义 Part.thought_signature，unknown fields 被静默丢弃）；新 SDK 正确解析 Part 级别 `thought_signature`（bytes），base64 编码后存入 `ToolCall.thought_signature`，回传时 base64 解码写回 Part
+  - 修复（工具声明类型）：`registry.to_gemini_declaration()` 将 Protobuf 大写类型（`OBJECT`/`STRING`）更正为 JSON Schema 小写类型（`object`/`string`），以兼容新 SDK 的 `parameters_json_schema`
+  - 修复（命名空间工具名）：`registry.execute` 支持 Gemini 命名空间工具名（如 `default_api:get_realtime_quote` → `get_realtime_quote`）
+  - 依赖变更：新增 `google-genai>=1.0.0`；`google-generativeai>=0.8.0` 保留供 `analyzer.py` 和 `image_stock_extractor.py` 使用
   - 兼容性：非 Reasoning 模型不受影响；与 LiteLLM Proxy 及其他 OpenAI 兼容代理兼容
 - 🐛 **Agent 模式下报告页「相关资讯」为空**（Issue #396）
   - 根因：Agent 工具结果仅用于 LLM 上下文，未写入 `news_intel`，前端 `GET /api/v1/history/{query_id}/news` 查询不到数据

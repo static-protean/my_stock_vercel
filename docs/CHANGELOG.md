@@ -59,6 +59,11 @@
   - OpenAI 兼容 API Key 长度校验放宽为 `>= 8`，支持 LiteLLM 本地开发常用短 Key
 
 ### 修复（#patch）
+- 🐛 **Bocha 搜索瞬时 SSL/网络错误重试**
+  - 现象：用户报 SSLError(SSLEOFError) 导致博查搜索一次失败即返回
+  - 根因：对瞬时 SSL/网络错误（SSLError、ConnectionError、Timeout 等）无重试
+  - 修复：新增 `_post_with_retry` 辅助函数，使用 tenacity 对博查 HTTP 请求做最多 3 次重试（指数退避 1–10s）
+  - 兼容性：无破坏性变更，行为对用户透明
 - 🐛 **移动端首页无法滑动查看溢出内容**（Issue #419）
   - 现象：手机浏览器访问首页时，报告内容超出屏幕但无法左右滑动，也没有滚动条
   - 根因：外层容器 `overflow-hidden` 禁止所有溢出滚动；5 列 CSS Grid 为固定宽度，无移动端断点适配

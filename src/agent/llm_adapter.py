@@ -427,7 +427,13 @@ class LLMToolAdapter:
 
         response = self._openai_client.chat.completions.create(**call_kwargs)
 
-        # Parse response
+        # Parse response — guard against None/empty choices (non-standard API response)
+        if not response.choices:
+            raise ValueError(
+                f"OpenAI-compatible API returned empty choices. "
+                f"Model: {model_name}, finish_reason: N/A. "
+                f"This may indicate the provider rejected the request or returned a malformed response."
+            )
         choice = response.choices[0]
         tool_calls = []
         text_content = choice.message.content

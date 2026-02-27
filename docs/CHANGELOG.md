@@ -8,6 +8,9 @@
 ## [Unreleased]
 
 ### 修复（#patch）
+- 🐛 **Web 服务启动自动构建前端静态资源**
+  - `main.py` 在 `--serve/--serve-only`（含 `--webui/--webui-only`）模式启动前，自动执行 `apps/dsa-web` 下的 `npm install && npm run build`
+  - 新增环境变量 `WEBUI_AUTO_BUILD`（默认 `true`），可关闭自动构建并改为手动构建
 - 🐛 **首页历史记录列表滚动跳回顶部**（Issue #429）
   - `fetchHistory` 引用不稳定导致加载更多后 useEffect 重新执行 reset 列表
   - 改用 `useRef` 追踪易变状态，稳定 `fetchHistory` 引用；后台刷新合并新增项而非替换整个列表

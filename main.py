@@ -37,8 +37,6 @@ if os.getenv("GITHUB_ACTIONS") != "true" and os.getenv("USE_PROXY", "false").low
 
 import argparse
 import logging
-import shutil
-import subprocess
 import sys
 import time
 import uuid

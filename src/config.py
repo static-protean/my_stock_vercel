@@ -284,10 +284,7 @@ class Config:
     
     # Telegram 机器人 - 已有 telegram_bot_token, telegram_chat_id
     telegram_webhook_secret: Optional[str] = None   # Webhook 密钥
-    
-    # Discord 机器人扩展配置
-    discord_bot_status: str = "A股智能分析 | /help"  # 机器人状态信息
-    
+        
     # 单例实例存储
     _instance: Optional['Config'] = None
     

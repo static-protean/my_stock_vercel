@@ -526,6 +526,7 @@ class StockAnalysisPipeline:
 
             # 转换为 AnalysisResult
             result = self._agent_result_to_analysis_result(agent_result, code, stock_name, report_type, query_id)
+            resolved_stock_name = result.name if result and result.name else stock_name
 
             # 保存新闻情报到数据库（Agent 工具结果仅用于 LLM 上下文，未持久化，Fixes #396）
             # 使用 search_stock_news（与 Agent 工具调用逻辑一致），仅 1 次 API 调用，无额外延迟
@@ -533,14 +534,14 @@ class StockAnalysisPipeline:
                 try:
                     news_response = self.search_service.search_stock_news(
                         stock_code=code,
-                        stock_name=stock_name,
+                        stock_name=resolved_stock_name,
                         max_results=5
                     )
                     if news_response.success and news_response.results:
                         query_context = self._build_query_context(query_id=query_id)
                         self.db.save_news_intel(
                             code=code,
-                            name=stock_name,
+                            name=resolved_stock_name,
                             dimension="latest_news",
                             query=news_response.query,
                             response=news_response,
@@ -553,6 +554,7 @@ class StockAnalysisPipeline:
             # 保存分析历史记录
             if result:
                 try:
+                    initial_context["stock_name"] = resolved_stock_name
                     self.db.save_analysis_history(
                         result=result,
                         query_id=query_id,
@@ -590,6 +592,9 @@ class StockAnalysisPipeline:
 
         if agent_result.success and agent_result.dashboard:
             dash = agent_result.dashboard
+            ai_stock_name = str(dash.get("stock_name", "")).strip()
+            if ai_stock_name and self._is_placeholder_stock_name(stock_name, code):
+                result.name = ai_stock_name
             result.sentiment_score = self._safe_int(dash.get("sentiment_score"), 50)
             result.trend_prediction = dash.get("trend_prediction", "未知")
             result.operation_advice = dash.get("operation_advice", "观望")
@@ -607,6 +612,22 @@ class StockAnalysisPipeline:
                 result.error_message = "Agent 未能生成有效的决策仪表盘"
 
         return result
+
+    @staticmethod
+    def _is_placeholder_stock_name(name: str, code: str) -> bool:
+        """Return True when the stock name is missing or placeholder-like."""
+        if not name:
+            return True
+        normalized = str(name).strip()
+        if not normalized:
+            return True
+        if normalized == code:
+            return True
+        if normalized.startswith("股票"):
+            return True
+        if "Unknown" in normalized:
+            return True
+        return False
 
     @staticmethod
     def _safe_int(value: Any, default: int = 50) -> int:

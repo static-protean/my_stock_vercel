@@ -21,6 +21,7 @@ import pandas as pd
 from src.config import get_config
 from src.search_service import SearchService
 from src.core.market_profile import get_profile, MarketProfile
+from src.core.market_strategy import get_market_strategy_blueprint
 from data_provider.base import DataFetcherManager
 
 logger = logging.getLogger(__name__)
@@ -108,6 +109,7 @@ class MarketAnalyzer:
         self.data_manager = DataFetcherManager()
         self.region = region if region in ("cn", "us") else "cn"
         self.profile: MarketProfile = get_profile(self.region)
+        self.strategy = get_market_strategy_blueprint(self.region)
 
     def get_market_overview(self) -> MarketOverview:
         """
@@ -507,6 +509,8 @@ Lagging: {bottom_sectors_text if bottom_sectors_text else "N/A"}"""
 
 {data_no_indices_hint_en}
 
+{self.strategy.to_prompt_block()}
+
 ---
 
 # Output Template (follow this structure)
@@ -530,6 +534,9 @@ Lagging: {bottom_sectors_text if bottom_sectors_text else "N/A"}"""
 
 ### 6. Risk Alerts
 (Key risks to watch)
+
+### 7. Strategy Plan
+(Provide risk-on/neutral/risk-off stance, position sizing guideline, and one invalidation trigger.)
 
 ---
 
@@ -564,6 +571,8 @@ Output the report content directly, no extra commentary.
 
 {data_no_indices_hint}
 
+{self.strategy.to_prompt_block()}
+
 ---
 
 # 输出格式模板（请严格按此格式输出）
@@ -587,6 +596,9 @@ Output the report content directly, no extra commentary.
 
 ### 六、风险提示
 （需要关注的风险点）
+
+### 七、策略计划
+（给出进攻/均衡/防守结论，对应仓位建议，并给出一个触发失效条件；最后补充“建议仅供参考，不构成投资建议”。）
 
 ---
 
@@ -650,6 +662,7 @@ Output the report content directly, no extra commentary.
 - **领跌**: {bottom_text}
 """
         market_label = "A股" if self.region == "cn" else "美股"
+        strategy_summary = self.strategy.to_markdown_block()
         report = f"""## {overview.date} 大盘复盘
 
 ### 一、市场总结
@@ -661,6 +674,8 @@ Output the report content directly, no extra commentary.
 {sector_section}
 ### 五、风险提示
 市场有风险，投资需谨慎。以上数据仅供参考，不构成投资建议。
+
+{strategy_summary}
 
 ---
 *复盘时间: {datetime.now().strftime('%H:%M')}*

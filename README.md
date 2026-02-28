@@ -44,7 +44,7 @@
 
 | 类型 | 支持 |
 |------|------|
-| AI 模型 | [AIHubMix](https://aihubmix.com/?aff=CfMq)、Gemini（免费）、OpenAI 兼容、DeepSeek、通义千问、Claude、Ollama、LiteLLM Proxy |
+| AI 模型 | [AIHubMix](https://aihubmix.com/?aff=CfMq)、Gemini、OpenAI 兼容、DeepSeek、通义千问、Claude 等（统一通过 [LiteLLM](https://github.com/BerriAI/litellm) 调用，支持多 Key 负载均衡）|
 | 行情数据 | AkShare、Tushare、Pytdx、Baostock、YFinance |
 | 新闻搜索 | Tavily、SerpAPI、Bocha、Brave |
 

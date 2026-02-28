@@ -30,6 +30,8 @@ from tenacity import (
     retry_if_exception_type,
 )
 
+from src.analyzer import STOCK_NAME_MAP
+
 # 配置日志
 logger = logging.getLogger(__name__)
 
@@ -848,6 +850,8 @@ class DataFetcherManager:
         """
         # Normalize code (strip SH/SZ prefix etc.)
         stock_code = normalize_stock_code(stock_code)
+        if stock_code in STOCK_NAME_MAP:
+            return STOCK_NAME_MAP[stock_code]
 
         # 1. 先检查缓存
         if hasattr(self, '_stock_name_cache') and stock_code in self._stock_name_cache:
@@ -880,7 +884,7 @@ class DataFetcherManager:
         
         # 4. 所有数据源都失败
         logger.warning(f"[股票名称] 所有数据源都无法获取 {stock_code} 的名称")
-        return None
+        return ""
 
     def batch_get_stock_names(self, stock_codes: List[str]) -> Dict[str, str]:
         """

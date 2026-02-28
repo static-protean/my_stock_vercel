@@ -130,7 +130,12 @@ class StockAnalysisPipeline:
             stock_name = self.fetcher_manager.get_stock_name(code)
 
             today = date.today()
-
+            # 注意：这里用自然日 date.today() 做“断点续传”判断。
+            # 若在周末/节假日/非交易日运行，或机器时区不在中国，可能出现：
+            # - 数据库已有最新交易日数据但仍会重复拉取（has_today_data 返回 False）
+            # - 或在跨日/时区偏移时误判“今日已有数据”
+            # 该行为目前保留（按需求不改逻辑），但如需更严谨可改为“最新交易日/数据源最新日期”判断。
+            
             # 断点续传检查：如果今日数据已存在，跳过
             if not force_refresh and self.db.has_today_data(code, today):
                 logger.info(f"{stock_name}({code}) 今日数据已存在，跳过获取（断点续传）")
@@ -1008,6 +1013,10 @@ class StockAnalysisPipeline:
 
                     # Issue #128: 分析间隔 - 在个股分析和大盘分析之间添加延迟
                     if idx < len(stock_codes) - 1 and analysis_delay > 0:
+                        # 注意：此 sleep 发生在“主线程收集 future 的循环”中，
+                        # 并不会阻止线程池中的任务同时发起网络请求。
+                        # 因此它对降低并发请求峰值的效果有限；真正的峰值主要由 max_workers 决定。
+                        # 该行为目前保留（按需求不改逻辑）。
                         logger.debug(f"等待 {analysis_delay} 秒后继续下一只股票...")
                         time.sleep(analysis_delay)
 

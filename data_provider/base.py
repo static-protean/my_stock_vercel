@@ -302,6 +302,9 @@ class BaseFetcher(ABC):
         df['ma20'] = df['close'].rolling(window=20, min_periods=1).mean()
         
         # 量比：当日成交量 / 5日平均成交量
+        # 注意：此处的 volume_ratio 是“日线成交量 / 前5日均量(shift 1)”的相对倍数，
+        # 与部分交易软件口径的“分时量比（同一时刻对比）”不同，含义更接近“放量倍数”。
+        # 该行为目前保留（按需求不改逻辑）。
         avg_volume_5 = df['volume'].rolling(window=5, min_periods=1).mean()
         df['volume_ratio'] = df['volume'] / avg_volume_5.shift(1)
         df['volume_ratio'] = df['volume_ratio'].fillna(1.0)

@@ -14,9 +14,28 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional, Tuple
 from dotenv import load_dotenv, dotenv_values
 from dataclasses import dataclass, field
+
+
+@dataclass
+class ConfigIssue:
+    """Structured configuration validation issue with a severity level.
+
+    Attributes:
+        severity: One of "error", "warning", or "info".
+        message:  Human-readable description of the issue.
+        field:    The environment variable / config field name most relevant to
+                  this issue (empty string when not applicable).
+    """
+
+    severity: Literal["error", "warning", "info"]
+    message: str
+    field: str = ""
+
+    def __str__(self) -> str:  # noqa: D105
+        return self.message
 
 
 def setup_env(override: bool = False):
@@ -100,8 +119,15 @@ class Config:
     openai_api_key: Optional[str] = None
     openai_base_url: Optional[str] = None  # 如: https://api.openai.com/v1
     openai_model: str = "gpt-4o-mini"  # OpenAI 兼容模型名称
-    openai_vision_model: Optional[str] = None  # Vision 专用模型（可选，不配置则用 openai_model；部分模型如 DeepSeek 不支持图像）
+    openai_vision_model: Optional[str] = None  # Deprecated: use VISION_MODEL instead
     openai_temperature: float = 0.7  # OpenAI 温度参数（0.0-2.0，默认0.7）
+
+    # === Vision 配置 ===
+    # VISION_MODEL: litellm model string used for image understanding calls.
+    # Fallback chain: VISION_MODEL → OPENAI_VISION_MODEL → gemini/gemini-2.0-flash
+    vision_model: str = ""
+    # VISION_PROVIDER_PRIORITY: comma-separated provider order for Vision fallback.
+    vision_provider_priority: str = "gemini,anthropic,openai"
 
     # === 搜索引擎配置（支持多 Key 负载均衡）===
     bocha_api_keys: List[str] = field(default_factory=list)  # Bocha API Keys
@@ -294,7 +320,12 @@ class Config:
     
     # Telegram 机器人 - 已有 telegram_bot_token, telegram_chat_id
     telegram_webhook_secret: Optional[str] = None   # Webhook 密钥
-        
+
+    # === 配置校验模式 ===
+    # CONFIG_VALIDATE_MODE=warn (default): log all issues but always continue startup
+    # CONFIG_VALIDATE_MODE=strict: exit(1) when any "error" severity issue is found
+    config_validate_mode: str = "warn"
+
     # 单例实例存储
     _instance: Optional['Config'] = None
     
@@ -550,6 +581,13 @@ class Config:
             openai_model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             openai_vision_model=os.getenv('OPENAI_VISION_MODEL') or None,
             openai_temperature=float(os.getenv('OPENAI_TEMPERATURE', '0.7')),
+            # Vision model: VISION_MODEL > OPENAI_VISION_MODEL (alias) > default
+            vision_model=(
+                os.getenv('VISION_MODEL')
+                or os.getenv('OPENAI_VISION_MODEL')
+                or ""
+            ),
+            vision_provider_priority=os.getenv('VISION_PROVIDER_PRIORITY', 'gemini,anthropic,openai'),
             bocha_api_keys=bocha_api_keys,
             tavily_api_keys=tavily_api_keys,
             brave_api_keys=brave_api_keys,
@@ -609,6 +647,7 @@ class Config:
             log_level=os.getenv('LOG_LEVEL', 'INFO'),
             max_workers=int(os.getenv('MAX_WORKERS', '3')),
             debug=os.getenv('DEBUG', 'false').lower() == 'true',
+            config_validate_mode=os.getenv('CONFIG_VALIDATE_MODE', 'warn').lower(),
             http_proxy=os.getenv('HTTP_PROXY'),
             https_proxy=os.getenv('HTTPS_PROXY'),
             schedule_enabled=os.getenv('SCHEDULE_ENABLED', 'false').lower() == 'true',
@@ -969,50 +1008,163 @@ class Config:
 
         self.stock_list = stock_list
     
-    def validate(self) -> List[str]:
-        """
-        验证配置完整性
-        
+    def validate_structured(self) -> List[ConfigIssue]:
+        """Return structured validation issues with severity levels.
+
+        Covers all three LLM configuration tiers introduced by PR #494:
+        - LITELLM_CONFIG (YAML)
+        - LLM_CHANNELS (env)
+        - Legacy per-provider keys
+
         Returns:
-            缺失或无效配置项的警告列表
+            List of ConfigIssue objects, each carrying a severity
+            ("error" | "warning" | "info"), a human-readable message, and the
+            primary environment variable / field name it relates to.
         """
-        warnings = []
-        
+        issues: List[ConfigIssue] = []
+
+        # --- Stock list ---
         if not self.stock_list:
-            warnings.append("警告：未配置自选股列表 (STOCK_LIST)")
-        
+            issues.append(ConfigIssue(
+                severity="error",
+                message="未配置自选股列表 (STOCK_LIST)",
+                field="STOCK_LIST",
+            ))
+
+        # --- Data sources (informational only) ---
         if not self.tushare_token:
-            warnings.append("提示：未配置 Tushare Token，将使用其他数据源")
-        
-        has_any_llm_key = bool(self.gemini_api_keys or self.anthropic_api_keys or self.openai_api_keys)
-        if not has_any_llm_key:
-            warnings.append("警告：未配置任何 LLM API Key（GEMINI_API_KEY/ANTHROPIC_API_KEY/OPENAI_API_KEY），AI 分析功能将不可用")
+            issues.append(ConfigIssue(
+                severity="info",
+                message="未配置 Tushare Token，将使用其他数据源",
+                field="TUSHARE_TOKEN",
+            ))
+
+        # --- LLM availability ---
+        # llm_model_list is populated for ALL three config tiers (YAML / channels /
+        # legacy keys), so it is the canonical signal that at least one LLM is
+        # configured, regardless of which tier the user chose.
+        if not self.llm_model_list:
+            issues.append(ConfigIssue(
+                severity="error",
+                message=(
+                    "未配置任何 LLM（LITELLM_CONFIG / LLM_CHANNELS / *_API_KEY），"
+                    "AI 分析功能将不可用"
+                ),
+                field="LITELLM_CONFIG",
+            ))
         elif not self.litellm_model:
-            warnings.append(
-                "提示：LITELLM_MODEL 未配置，将自动从可用 API Key 推断模型。"
-                "gemini_model 等 legacy 字段将在未来版本弃用，建议尽早配置 LITELLM_MODEL（格式如 gemini/gemini-2.5-flash）"
-            )
-        
-        if not self.bocha_api_keys and not self.tavily_api_keys and not self.brave_api_keys and not self.serpapi_keys:
-            warnings.append("提示：未配置搜索引擎 API Key (Bocha/Tavily/Brave/SerpAPI)，新闻搜索功能将不可用")
-        
-        # 检查通知配置
-        has_notification = (
-            self.wechat_webhook_url or
-            self.feishu_webhook_url or
-            (self.telegram_bot_token and self.telegram_chat_id) or
-            (self.email_sender and self.email_password) or
-            (self.pushover_user_key and self.pushover_api_token) or
-            self.pushplus_token or
-            self.serverchan3_sendkey or
-            self.custom_webhook_urls or
-            (self.discord_bot_token and self.discord_main_channel_id) or
-            self.discord_webhook_url
+            issues.append(ConfigIssue(
+                severity="info",
+                message=(
+                    "LITELLM_MODEL 未配置，将自动从可用 API Key 推断模型。"
+                    "建议尽早配置 LITELLM_MODEL（格式如 gemini/gemini-2.5-flash）"
+                ),
+                field="LITELLM_MODEL",
+            ))
+
+        # --- Search engine (informational only) ---
+        if not (
+            self.bocha_api_keys
+            or self.tavily_api_keys
+            or self.brave_api_keys
+            or self.serpapi_keys
+        ):
+            issues.append(ConfigIssue(
+                severity="info",
+                message="未配置搜索引擎 API Key (Bocha/Tavily/Brave/SerpAPI)，新闻搜索功能将不可用",
+                field="BOCHA_API_KEY",
+            ))
+
+        # --- Notification channels ---
+        has_notification = bool(
+            self.wechat_webhook_url
+            or self.feishu_webhook_url
+            or (self.telegram_bot_token and self.telegram_chat_id)
+            or (self.email_sender and self.email_password)
+            or (self.pushover_user_key and self.pushover_api_token)
+            or self.pushplus_token
+            or self.serverchan3_sendkey
+            or self.custom_webhook_urls
+            or (self.discord_bot_token and self.discord_main_channel_id)
+            or self.discord_webhook_url
         )
         if not has_notification:
-            warnings.append("提示：未配置通知渠道，将不发送推送通知")
-        
-        return warnings
+            issues.append(ConfigIssue(
+                severity="warning",
+                message="未配置通知渠道，将不发送推送通知",
+                field="WECHAT_WEBHOOK_URL",
+            ))
+
+        # --- Deprecated field migration hints ---
+        if os.getenv("OPENAI_VISION_MODEL"):
+            issues.append(ConfigIssue(
+                severity="info",
+                message=(
+                    "OPENAI_VISION_MODEL 已废弃，请改用 VISION_MODEL。"
+                    "当前值已自动迁移，建议更新配置文件以消除此提示。"
+                ),
+                field="OPENAI_VISION_MODEL",
+            ))
+
+        # --- Vision key availability ---
+        # Only warn when user explicitly set VISION_MODEL (or OPENAI_VISION_MODEL alias).
+        # Skipped when vision_model is empty (Vision not intentionally configured).
+        if self.vision_model:
+            # Maps provider prefix → the corresponding key list tracked by Config.
+            # vertex_ai shares gemini keys; other LiteLLM-native providers are not
+            # in this map (their keys come from env vars, which we cannot inspect here).
+            _VISION_KEY_MAP = {
+                "gemini": self.gemini_api_keys,
+                "vertex_ai": self.gemini_api_keys,
+                "anthropic": self.anthropic_api_keys,
+                "openai": self.openai_api_keys,
+                "deepseek": self.deepseek_api_keys,
+            }
+            # Derive the primary model's provider prefix so that its key is also
+            # checked even when the provider is absent from VISION_PROVIDER_PRIORITY.
+            _primary_prefix = (
+                self.vision_model.split("/")[0]
+                if "/" in self.vision_model
+                else "openai"
+            )
+            _priority_providers = [
+                p.strip().lower()
+                for p in self.vision_provider_priority.split(",")
+                if p.strip()
+            ]
+            # Union: fallback providers + primary model's own provider
+            _all_providers = {_primary_prefix} | set(_priority_providers)
+
+            # Align with get_api_keys_for_model: keys must be non-empty and len >= 8
+            _has_any_key = any(
+                any(k and len(k) >= 8 for k in (_VISION_KEY_MAP.get(p) or []))
+                for p in _all_providers
+                if p in _VISION_KEY_MAP
+            )
+            if not _has_any_key:
+                _checked = sorted(_all_providers & _VISION_KEY_MAP.keys())
+                issues.append(ConfigIssue(
+                    severity="warning",
+                    message=(
+                        "VISION_MODEL 已配置，但未找到可用的 Vision API Key "
+                        f"（已检查：{', '.join(_checked)}）。"
+                        "图片股票代码提取功能将不可用，请配置对应的 API Key。"
+                    ),
+                    field="VISION_MODEL",
+                ))
+
+        return issues
+
+    def validate(self) -> List[str]:
+        """Return validation messages as plain strings (backward-compatible).
+
+        Internally delegates to validate_structured().  Callers that only need
+        the human-readable strings can continue to use this method unchanged.
+
+        Returns:
+            List of message strings, one per ConfigIssue.
+        """
+        return [issue.message for issue in self.validate_structured()]
     
     def get_db_url(self) -> str:
         """

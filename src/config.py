@@ -10,10 +10,11 @@ A股自选股智能分析系统 - 配置管理模块
 3. 提供类型安全的配置访问接口
 """
 
+import json
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from dotenv import load_dotenv, dotenv_values
 from dataclasses import dataclass, field
 
@@ -64,10 +65,19 @@ class Config:
     litellm_model: str = ""  # Primary model; must include provider prefix when set explicitly
     litellm_fallback_models: List[str] = field(default_factory=list)  # Cross-model fallback list
 
+    # --- Multi-channel LLM config (new) ---
+    # LITELLM_CONFIG: path to a standard litellm_config.yaml file (most powerful)
+    litellm_config_path: Optional[str] = None
+    # LLM_CHANNELS: list of channel dicts, each with name/base_url/api_keys/models
+    llm_channels: List[Dict[str, Any]] = field(default_factory=list)
+    # Pre-built LiteLLM Router model_list (populated from channels, YAML, or legacy keys)
+    llm_model_list: List[Dict[str, Any]] = field(default_factory=list)
+
     # Multi-key support: each list is parsed from *_API_KEYS (comma-separated) with single-key fallback
     gemini_api_keys: List[str] = field(default_factory=list)
     anthropic_api_keys: List[str] = field(default_factory=list)
     openai_api_keys: List[str] = field(default_factory=list)
+    deepseek_api_keys: List[str] = field(default_factory=list)
 
     # Legacy single-key fields (kept for backward compatibility; gemini_api_keys[0] when set)
     gemini_api_key: Optional[str] = None
@@ -394,6 +404,14 @@ class Config:
             if _fallback_key:
                 openai_api_keys = [_fallback_key]
 
+        # DEEPSEEK_API_KEYS > DEEPSEEK_API_KEY (independent from OpenAI-compatible layer)
+        _deepseek_keys_raw = os.getenv('DEEPSEEK_API_KEYS', '')
+        deepseek_api_keys = [k.strip() for k in _deepseek_keys_raw.split(',') if k.strip()]
+        if not deepseek_api_keys:
+            _single_deepseek = os.getenv('DEEPSEEK_API_KEY', '').strip()
+            if _single_deepseek:
+                deepseek_api_keys = [_single_deepseek]
+
         # LITELLM_MODEL: explicit config takes precedence; else infer from available keys
         litellm_model = os.getenv('LITELLM_MODEL', '').strip()
         if not litellm_model:
@@ -404,6 +422,8 @@ class Config:
                 litellm_model = f'gemini/{_gemini_model_name}'
             elif anthropic_api_keys:
                 litellm_model = f'anthropic/{_anthropic_model_name}'
+            elif deepseek_api_keys:
+                litellm_model = 'deepseek/deepseek-chat'
             elif openai_api_keys:
                 # For openai-compatible models, add prefix only if not already prefixed
                 if '/' not in _openai_model_name:
@@ -423,6 +443,50 @@ class Config:
                 litellm_fallback_models = [_fb]
             else:
                 litellm_fallback_models = []
+
+        # === LLM Channels + YAML config ===
+        litellm_config_path = os.getenv('LITELLM_CONFIG', '').strip() or None
+        llm_channels: List[Dict[str, Any]] = []
+        llm_model_list: List[Dict[str, Any]] = []
+
+        # Priority 1: LITELLM_CONFIG (standard LiteLLM YAML config file)
+        if litellm_config_path:
+            llm_model_list = cls._parse_litellm_yaml(litellm_config_path)
+
+        # Priority 2: LLM_CHANNELS (env var based channel config)
+        if not llm_model_list:
+            _channels_str = os.getenv('LLM_CHANNELS', '').strip()
+            if _channels_str:
+                llm_channels = cls._parse_llm_channels(_channels_str)
+                llm_model_list = cls._channels_to_model_list(llm_channels)
+
+        # Priority 3: Legacy env vars → auto-build model_list (backward compatible)
+        if not llm_model_list:
+            llm_model_list = cls._legacy_keys_to_model_list(
+                gemini_api_keys, anthropic_api_keys, openai_api_keys,
+                os.getenv('OPENAI_BASE_URL') or (
+                    'https://aihubmix.com/v1' if os.getenv('AIHUBMIX_KEY') else None
+                ),
+                deepseek_api_keys,
+            )
+
+        # Auto-infer LITELLM_MODEL from channels when not explicitly set
+        if not litellm_model and llm_channels:
+            for _ch in llm_channels:
+                if _ch.get('models'):
+                    litellm_model = _ch['models'][0]
+                    break
+
+        # Auto-infer LITELLM_FALLBACK_MODELS from channels when not explicitly set
+        if not litellm_fallback_models and llm_channels and litellm_model:
+            _all_ch_models: List[str] = []
+            for _ch in llm_channels:
+                _all_ch_models.extend(_ch.get('models', []))
+            _seen = {litellm_model}
+            litellm_fallback_models = [
+                m for m in _all_ch_models
+                if m not in _seen and not _seen.add(m)  # type: ignore[func-returns-value]
+            ]
 
         # 解析搜索引擎 API Keys（支持多个 key，逗号分隔）
         bocha_keys_str = os.getenv('BOCHA_API_KEYS', '')
@@ -455,9 +519,13 @@ class Config:
             tushare_token=os.getenv('TUSHARE_TOKEN'),
             litellm_model=litellm_model,
             litellm_fallback_models=litellm_fallback_models,
+            litellm_config_path=litellm_config_path,
+            llm_channels=llm_channels,
+            llm_model_list=llm_model_list,
             gemini_api_keys=gemini_api_keys,
             anthropic_api_keys=anthropic_api_keys,
             openai_api_keys=openai_api_keys,
+            deepseek_api_keys=deepseek_api_keys,
             gemini_api_key=os.getenv('GEMINI_API_KEY'),
             gemini_model=os.getenv('GEMINI_MODEL', 'gemini-3-flash-preview'),
             gemini_model_fallback=os.getenv('GEMINI_MODEL_FALLBACK', 'gemini-2.5-flash'),
@@ -596,6 +664,204 @@ class Config:
             circuit_breaker_cooldown=int(os.getenv('CIRCUIT_BREAKER_COOLDOWN', '300'))
         )
     
+    @classmethod
+    def _parse_litellm_yaml(cls, config_path: str) -> List[Dict[str, Any]]:
+        """Parse a standard LiteLLM config YAML file into Router model_list.
+
+        Supports the ``os.environ/VAR_NAME`` syntax for secret references.
+        Returns an empty list on any error (logged, never raises).
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+        try:
+            import yaml
+        except ImportError:
+            _logger.warning("PyYAML not installed; LITELLM_CONFIG ignored. Install with: pip install pyyaml")
+            return []
+
+        path = Path(config_path)
+        if not path.is_absolute():
+            path = Path(__file__).parent.parent / path
+        if not path.exists():
+            _logger.warning(f"LITELLM_CONFIG file not found: {path}")
+            return []
+
+        try:
+            with open(path, encoding='utf-8') as f:
+                yaml_config = yaml.safe_load(f) or {}
+        except Exception as e:
+            _logger.warning(f"Failed to parse LITELLM_CONFIG: {e}")
+            return []
+
+        model_list = yaml_config.get('model_list', [])
+        if not isinstance(model_list, list):
+            _logger.warning("LITELLM_CONFIG: model_list must be a list")
+            return []
+
+        # Resolve os.environ/ references in string params
+        for entry in model_list:
+            params = entry.get('litellm_params', {})
+            for key in list(params.keys()):
+                val = params.get(key)
+                if isinstance(val, str) and val.startswith('os.environ/'):
+                    env_name = val.split('/', 1)[1]
+                    params[key] = os.getenv(env_name, '')
+
+        _logger.info(f"LITELLM_CONFIG: loaded {len(model_list)} model deployment(s) from {path}")
+        return model_list
+
+    @classmethod
+    def _parse_llm_channels(cls, channels_str: str) -> List[Dict[str, Any]]:
+        """Parse LLM_CHANNELS env var and per-channel env vars.
+
+        Format:
+            LLM_CHANNELS=aihubmix,deepseek,gemini
+            LLM_AIHUBMIX_BASE_URL=https://aihubmix.com/v1
+            LLM_AIHUBMIX_API_KEY=sk-xxx           (or LLM_AIHUBMIX_API_KEYS=k1,k2)
+            LLM_AIHUBMIX_MODELS=openai/gpt-4o-mini,openai/claude-3-5-sonnet
+        """
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        channels: List[Dict[str, Any]] = []
+        for raw_name in channels_str.split(','):
+            ch_name = raw_name.strip()
+            if not ch_name:
+                continue
+            ch_upper = ch_name.upper()
+
+            base_url = os.getenv(f'LLM_{ch_upper}_BASE_URL', '').strip() or None
+
+            # API keys: LLM_{NAME}_API_KEYS (multi) > LLM_{NAME}_API_KEY (single)
+            api_keys_raw = os.getenv(f'LLM_{ch_upper}_API_KEYS', '')
+            api_keys = [k.strip() for k in api_keys_raw.split(',') if k.strip()]
+            if not api_keys:
+                single_key = os.getenv(f'LLM_{ch_upper}_API_KEY', '').strip()
+                if single_key:
+                    api_keys = [single_key]
+
+            # Models
+            models_raw = os.getenv(f'LLM_{ch_upper}_MODELS', '')
+            models = [m.strip() for m in models_raw.split(',') if m.strip()]
+            # Auto-prefix: models without provider prefix in channels with base_url → openai/
+            models = [
+                (f'openai/{m}' if '/' not in m and base_url else m)
+                for m in models
+            ]
+
+            # Extra headers (JSON string, optional)
+            extra_headers_raw = os.getenv(f'LLM_{ch_upper}_EXTRA_HEADERS', '').strip()
+            extra_headers = None
+            if extra_headers_raw:
+                try:
+                    extra_headers = json.loads(extra_headers_raw)
+                except json.JSONDecodeError:
+                    _logger.warning(f"LLM_{ch_upper}_EXTRA_HEADERS: invalid JSON, ignored")
+
+            if not api_keys:
+                _logger.warning(f"LLM channel '{ch_name}': no API key configured, skipped")
+                continue
+            if not models:
+                _logger.warning(f"LLM channel '{ch_name}': no models configured, skipped")
+                continue
+
+            channels.append({
+                'name': ch_name.lower(),
+                'base_url': base_url,
+                'api_keys': api_keys,
+                'models': models,
+                'extra_headers': extra_headers,
+            })
+            _logger.info(f"LLM channel '{ch_name}': {len(models)} model(s), {len(api_keys)} key(s)")
+
+        return channels
+
+    @classmethod
+    def _channels_to_model_list(cls, channels: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert parsed LLM channels to LiteLLM Router model_list format."""
+        model_list: List[Dict[str, Any]] = []
+        for ch in channels:
+            for model_name in ch['models']:
+                for api_key in ch['api_keys']:
+                    litellm_params: Dict[str, Any] = {
+                        'model': model_name,
+                        'api_key': api_key,
+                    }
+                    if ch['base_url']:
+                        litellm_params['api_base'] = ch['base_url']
+                    # Auto-inject aihubmix sponsored header
+                    headers = dict(ch.get('extra_headers') or {})
+                    if ch['base_url'] and 'aihubmix.com' in ch['base_url']:
+                        headers.setdefault('APP-Code', 'GPIJ3886')
+                    if headers:
+                        litellm_params['extra_headers'] = headers
+
+                    model_list.append({
+                        'model_name': model_name,
+                        'litellm_params': litellm_params,
+                    })
+        return model_list
+
+    @classmethod
+    def _legacy_keys_to_model_list(
+        cls,
+        gemini_keys: List[str],
+        anthropic_keys: List[str],
+        openai_keys: List[str],
+        openai_base_url: Optional[str],
+        deepseek_keys: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Build Router model_list from legacy per-provider keys (backward compat).
+
+        Returns a model_list where each provider's keys are expanded into
+        deployments, keyed by placeholder model_name tokens.  The analyzer
+        resolves actual model_names at call time from LITELLM_MODEL /
+        LITELLM_FALLBACK_MODELS.
+        """
+        model_list: List[Dict[str, Any]] = []
+
+        # Gemini keys
+        for k in gemini_keys:
+            if k and len(k) >= 8:
+                model_list.append({
+                    'model_name': '__legacy_gemini__',
+                    'litellm_params': {'model': '__legacy_gemini__', 'api_key': k},
+                })
+
+        # Anthropic keys
+        for k in anthropic_keys:
+            if k and len(k) >= 8:
+                model_list.append({
+                    'model_name': '__legacy_anthropic__',
+                    'litellm_params': {'model': '__legacy_anthropic__', 'api_key': k},
+                })
+
+        # OpenAI-compatible keys
+        for k in openai_keys:
+            if k and len(k) >= 8:
+                params: Dict[str, Any] = {'model': '__legacy_openai__', 'api_key': k}
+                if openai_base_url:
+                    params['api_base'] = openai_base_url
+                if openai_base_url and 'aihubmix.com' in openai_base_url:
+                    params['extra_headers'] = {'APP-Code': 'GPIJ3886'}
+                model_list.append({
+                    'model_name': '__legacy_openai__',
+                    'litellm_params': params,
+                })
+
+        # DeepSeek keys (native litellm provider — auto-resolves api_base)
+        for k in (deepseek_keys or []):
+            if k and len(k) >= 8:
+                model_list.append({
+                    'model_name': '__legacy_deepseek__',
+                    'litellm_params': {
+                        'model': '__legacy_deepseek__',
+                        'api_key': k,
+                    },
+                })
+
+        return model_list
+
     @classmethod
     def _parse_stock_email_groups(cls) -> List[Tuple[List[str], List[str]]]:
         """
@@ -763,6 +1029,47 @@ class Config:
 def get_config() -> Config:
     """获取全局配置实例的快捷方式"""
     return Config.get_instance()
+
+
+# ============================================================
+# Shared LLM helpers (used by both analyzer and agent/llm_adapter)
+# ============================================================
+
+def get_api_keys_for_model(model: str, config: Config) -> List[str]:
+    """Return explicitly managed API keys for a litellm model (legacy path only).
+
+    When llm_model_list is populated (channels / YAML), the Router handles key
+    selection, so this function is not needed.  Kept for backward compat when
+    no Router is built and a direct litellm.completion() call is needed.
+    """
+    if model.startswith("gemini/") or model.startswith("vertex_ai/"):
+        return [k for k in config.gemini_api_keys if k and len(k) >= 8]
+    if model.startswith("anthropic/"):
+        return [k for k in config.anthropic_api_keys if k and len(k) >= 8]
+    if model.startswith("deepseek/"):
+        return [k for k in config.deepseek_api_keys if k and len(k) >= 8]
+    if model.startswith("openai/") or "/" not in model:
+        return [k for k in config.openai_api_keys if k and len(k) >= 8]
+    # Other LiteLLM-native providers – API key resolved from env vars
+    return []
+
+
+def extra_litellm_params(model: str, config: Config) -> Dict[str, Any]:
+    """Build extra litellm params for a model (legacy path only).
+
+    When llm_model_list is populated, the Router already carries api_base
+    and headers per-deployment, so this is not called.
+    """
+    params: Dict[str, Any] = {}
+    # deepseek/ provider: litellm auto-resolves api_base, no manual override needed
+    if model.startswith("deepseek/"):
+        return params
+    if model.startswith("openai/") or "/" not in model:
+        if config.openai_base_url:
+            params["api_base"] = config.openai_base_url
+        if config.openai_base_url and "aihubmix.com" in config.openai_base_url:
+            params["extra_headers"] = {"APP-Code": "GPIJ3886"}
+    return params
 
 
 if __name__ == "__main__":

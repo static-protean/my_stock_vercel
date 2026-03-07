@@ -22,6 +22,7 @@ from enum import Enum
 from src.config import get_config
 from src.analyzer import AnalysisResult
 from bot.models import BotMessage
+from src.utils.data_processing import normalize_model_used
 from src.notification_sender import (
     AstrbotSender,
     CustomWebhookSender,
@@ -154,6 +155,14 @@ class NotificationService(
             channel_names = [ChannelDetector.get_channel_name(ch) for ch in self._available_channels]
             channel_names.extend(self._context_channels)
             logger.info(f"已配置 {len(channel_names)} 个通知渠道：{', '.join(channel_names)}")
+
+    def _collect_models_used(self, results: List[AnalysisResult]) -> List[str]:
+        models: List[str] = []
+        for result in results:
+            model = normalize_model_used(getattr(result, "model_used", None))
+            if model:
+                models.append(model)
+        return list(dict.fromkeys(models))
     
     def _detect_all_channels(self) -> List[NotificationChannel]:
         """
@@ -1095,7 +1104,10 @@ class NotificationService(
         
         # 底部
         lines.append(f"*生成时间: {datetime.now().strftime('%H:%M')}*")
-        
+        models = self._collect_models_used(results)
+        if models:
+            lines.append(f"*分析模型: {', '.join(models)}*")
+
         content = "\n".join(lines)
         
         return content
@@ -1153,17 +1165,20 @@ class NotificationService(
             
             lines.append("")
         
-        # 底部
+        # 底部（模型行在 --- 之前，Issue #528）
+        models = self._collect_models_used(results)
+        if models:
+            lines.append(f"*分析模型: {', '.join(models)}*")
         lines.extend([
             "---",
             "*AI生成，仅供参考，不构成投资建议*",
             f"*详细报告见 reports/report_{report_date.replace('-', '')}.md*"
         ])
-        
+
         content = "\n".join(lines)
-        
+
         return content
-    
+
     def generate_single_stock_report(self, result: AnalysisResult) -> str:
         """
         生成单只股票的分析报告（用于单股推送模式 #55）
@@ -1272,11 +1287,12 @@ class NotificationService(
                 "",
             ])
         
-        lines.extend([
-            "---",
-            "*AI生成，仅供参考，不构成投资建议*",
-        ])
-        
+        lines.append("---")
+        model_used = normalize_model_used(getattr(result, "model_used", None))
+        if model_used:
+            lines.append(f"*分析模型: {model_used}*")
+        lines.append("*AI生成，仅供参考，不构成投资建议*")
+
         return "\n".join(lines)
 
     # Display name mapping for realtime data sources

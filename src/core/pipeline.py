@@ -592,7 +592,8 @@ class StockAnalysisPipeline:
             operation_advice="观望",
             success=agent_result.success,
             error_message=agent_result.error if not agent_result.success else None,
-            data_sources=f"agent:{agent_result.provider}"
+            data_sources=f"agent:{agent_result.provider}",
+            model_used=agent_result.model or None,
         )
 
         if agent_result.success and agent_result.dashboard:

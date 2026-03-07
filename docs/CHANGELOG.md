@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- 🐛 **狙击点位解析错误** — 理想买入/二次买入等字段在无「元」字时误提取括号内技术指标数字（如 MA5/10→10.0、M20→20.0）；现先截去第一个括号后内容再提取，修复 #488
+
 ## [3.4.9] - 2026-03-06
 
 ### Added

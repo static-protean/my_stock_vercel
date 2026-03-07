@@ -552,9 +552,14 @@ class DataFetcherManager:
         stock_codes = [normalize_stock_code(c) for c in stock_codes]
 
         from src.config import get_config
-        
+
         config = get_config()
-        
+
+        # Issue #455: PREFETCH_REALTIME_QUOTES=false 可禁用预取，避免全市场拉取
+        if not getattr(config, "prefetch_realtime_quotes", True):
+            logger.debug("[预取] PREFETCH_REALTIME_QUOTES=false，跳过批量预取")
+            return 0
+
         # 如果实时行情被禁用，跳过预取
         if not config.enable_realtime_quote:
             logger.debug("[预取] 实时行情功能已禁用，跳过预取")
@@ -859,7 +864,7 @@ class DataFetcherManager:
         logger.warning(f"[筹码分布] {stock_code} 所有数据源均失败")
         return None
 
-    def get_stock_name(self, stock_code: str) -> Optional[str]:
+    def get_stock_name(self, stock_code: str, allow_realtime: bool = True) -> Optional[str]:
         """
         获取股票中文名称（自动切换数据源）
         
@@ -870,6 +875,9 @@ class DataFetcherManager:
         
         Args:
             stock_code: 股票代码
+            allow_realtime: Whether to query realtime quote first. Set False when
+                caller only wants lightweight prefetch without triggering heavy
+                realtime source calls.
             
         Returns:
             股票中文名称，所有数据源都失败则返回 None
@@ -887,14 +895,15 @@ class DataFetcherManager:
         if not hasattr(self, '_stock_name_cache'):
             self._stock_name_cache = {}
         
-        # 2. 尝试从实时行情中获取（最快）
-        quote = self.get_realtime_quote(stock_code)
-        if quote and hasattr(quote, 'name') and quote.name:
-            name = quote.name
-            self._stock_name_cache[stock_code] = name
-            logger.info(f"[股票名称] 从实时行情获取: {stock_code} -> {name}")
-            return name
-        
+        # 2. 尝试从实时行情中获取（最快，可按需禁用）
+        if allow_realtime:
+            quote = self.get_realtime_quote(stock_code)
+            if quote and hasattr(quote, 'name') and quote.name:
+                name = quote.name
+                self._stock_name_cache[stock_code] = name
+                logger.info(f"[股票名称] 从实时行情获取: {stock_code} -> {name}")
+                return name
+
         # 3. 依次尝试各个数据源
         for fetcher in self._fetchers:
             if hasattr(fetcher, 'get_stock_name'):
@@ -911,6 +920,28 @@ class DataFetcherManager:
         # 4. 所有数据源都失败
         logger.warning(f"[股票名称] 所有数据源都无法获取 {stock_code} 的名称")
         return ""
+
+    def prefetch_stock_names(self, stock_codes: List[str], use_bulk: bool = False) -> None:
+        """
+        Pre-fetch stock names into cache before parallel analysis (Issue #455).
+
+        When use_bulk=False, only calls get_stock_name per code (no get_stock_list),
+        avoiding full-market fetch. Sequential execution to avoid rate limits.
+
+        Args:
+            stock_codes: Stock codes to prefetch.
+            use_bulk: If True, may use get_stock_list (full fetch). Default False.
+        """
+        if not stock_codes:
+            return
+        stock_codes = [normalize_stock_code(c) for c in stock_codes]
+        if use_bulk:
+            self.batch_get_stock_names(stock_codes)
+            return
+        for code in stock_codes:
+            # Skip realtime lookup to avoid triggering expensive full-market quote
+            # requests during the prefetch phase.
+            self.get_stock_name(code, allow_realtime=False)
 
     def batch_get_stock_names(self, stock_codes: List[str]) -> Dict[str, str]:
         """

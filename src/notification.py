@@ -1407,7 +1407,19 @@ class NotificationService(
                 logger.info("Markdown 已转换为图片，将向 %s 发送图片",
                             [ch.value for ch in channels_needing_image])
             elif channels_needing_image:
-                logger.warning("Markdown 转图片失败，将回退为文本发送")
+                try:
+                    from src.config import get_config
+                    engine = getattr(get_config(), "md2img_engine", "wkhtmltoimage")
+                except Exception:
+                    engine = "wkhtmltoimage"
+                hint = (
+                    "npm i -g markdown-to-file" if engine == "markdown-to-file"
+                    else "wkhtmltopdf (apt install wkhtmltopdf / brew install wkhtmltopdf)"
+                )
+                logger.warning(
+                    "Markdown 转图片失败，将回退为文本发送。请检查 MARKDOWN_TO_IMAGE_CHANNELS 配置并安装 %s",
+                    hint,
+                )
 
         channel_names = self.get_channel_names()
         logger.info(f"正在向 {len(self._available_channels)} 个渠道发送通知：{channel_names}")

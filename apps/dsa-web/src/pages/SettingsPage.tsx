@@ -1,6 +1,7 @@
 import type React from 'react';
 import { useEffect } from 'react';
 import { useAuth, useSystemConfig } from '../hooks';
+import { ApiErrorAlert } from '../components/common';
 import {
   ChangePasswordCard,
   ImageStockExtractor,
@@ -91,10 +92,9 @@ const SettingsPage: React.FC = () => {
         </div>
 
         {saveError ? (
-          <SettingsAlert
+          <ApiErrorAlert
             className="mt-3"
-            title="保存失败"
-            message={saveError}
+            error={saveError}
             actionLabel={retryAction === 'save' ? '重试保存' : undefined}
             onAction={retryAction === 'save' ? () => void retry() : undefined}
           />
@@ -102,9 +102,8 @@ const SettingsPage: React.FC = () => {
       </header>
 
       {loadError ? (
-        <SettingsAlert
-          title="加载设置失败"
-          message={loadError}
+        <ApiErrorAlert
+          error={loadError}
           actionLabel={retryAction === 'load' ? '重试加载' : '重新加载'}
           onAction={() => void retry()}
           className="mb-4"
@@ -196,11 +195,9 @@ const SettingsPage: React.FC = () => {
 
       {toast ? (
         <div className="fixed bottom-5 right-5 z-50 w-[320px] max-w-[calc(100vw-24px)]">
-          <SettingsAlert
-            title={toast.type === 'success' ? '操作成功' : '操作失败'}
-            message={toast.message}
-            variant={toast.type === 'success' ? 'success' : 'error'}
-          />
+          {toast.type === 'success'
+            ? <SettingsAlert title="操作成功" message={toast.message} variant="success" />
+            : <ApiErrorAlert error={toast.error} />}
         </div>
       ) : null}
     </div>

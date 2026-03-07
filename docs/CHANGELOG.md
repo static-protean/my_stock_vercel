@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- 🐛 **Web UI API error classification** — frontend no longer treats every HTTP 400 as the same “server/network” failure. It now prioritizes backend error text, distinguishes Agent disabled / missing params / model-tool incompatibility / upstream LLM 400 / upstream timeout or egress failure / local connection failure, and only shows local listen-address hints when the browser cannot reach the local service.
 ### Added
 - **Markdown-to-image for dashboard report** (#455) — 个股日报汇总支持 markdown 转图片推送（Telegram、WeChat、Custom、Email），与大盘复盘行为一致
 - **markdown-to-file engine** (#455) — `MD2IMG_ENGINE=markdown-to-file` 可选，对 emoji 支持更好，需 `npm i -g markdown-to-file`

@@ -48,9 +48,11 @@ def normalize_stock_code(stock_code: str) -> str:
     - '600519'      -> '600519'   (already clean)
     - 'SH600519'    -> '600519'   (strip SH prefix)
     - 'SZ000001'    -> '000001'   (strip SZ prefix)
+    - 'BJ920748'    -> '920748'   (strip BJ prefix, BSE)
     - 'sh600519'    -> '600519'   (case-insensitive)
     - '600519.SH'   -> '600519'   (strip .SH suffix)
     - '000001.SZ'   -> '000001'   (strip .SZ suffix)
+    - '920748.BJ'   -> '920748'   (strip .BJ suffix, BSE)
     - 'HK00700'     -> 'HK00700'  (keep HK prefix for HK stocks)
     - 'AAPL'        -> 'AAPL'     (keep US stock ticker as-is)
 
@@ -67,13 +69,34 @@ def normalize_stock_code(stock_code: str) -> str:
         if candidate.isdigit() and len(candidate) in (5, 6):
             return candidate
 
-    # Strip .SH/.SZ suffix (e.g. 600519.SH -> 600519)
+    # Strip BJ prefix (e.g. BJ920748 -> 920748)
+    if upper.startswith('BJ') and not upper.startswith('BJ.'):
+        candidate = code[2:]
+        if candidate.isdigit() and len(candidate) == 6:
+            return candidate
+
+    # Strip .SH/.SZ/.BJ suffix (e.g. 600519.SH -> 600519, 920748.BJ -> 920748)
     if '.' in code:
         base, suffix = code.rsplit('.', 1)
-        if suffix.upper() in ('SH', 'SZ', 'SS') and base.isdigit():
+        if suffix.upper() in ('SH', 'SZ', 'SS', 'BJ') and base.isdigit():
             return base
 
     return code
+
+
+def is_bse_code(code: str) -> bool:
+    """
+    Check if the code is a Beijing Stock Exchange (BSE) A-share code.
+
+    BSE rules:
+    - Old format (pre-2024): 8xxxxx (e.g. 838163), 4xxxxx (e.g. 430047)
+    - New format (2024+, post full migration Oct 2025): 920xxx+
+    Note: 900xxx are Shanghai B-shares, NOT BSE — must return False.
+    """
+    c = (code or "").strip().split(".")[0]
+    if len(c) != 6 or not c.isdigit():
+        return False
+    return c.startswith(("8", "4")) or c.startswith("92")
 
 
 def canonical_stock_code(code: str) -> str:

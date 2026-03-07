@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 ### Fixed
+- 🐛 **北交所代码识别失败** (#491) — 8/4/92 开头的 6 位代码现正确识别为北交所；Tushare/Akshare/Yfinance 等数据源支持 .BJ 或 bj 前缀；Baostock/Pytdx 对北交所代码显式切换数据源；避免误判上海 B 股 900xxx
 - 🐛 **狙击点位解析错误** — 理想买入/二次买入等字段在无「元」字时误提取括号内技术指标数字（如 MA5/10→10.0、M20→20.0）；现先截去第一个括号后内容再提取，修复 #488
 
 ## [3.4.9] - 2026-03-06

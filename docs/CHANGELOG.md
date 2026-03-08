@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- 📖 **LLM 配置指南** — 新增 [docs/LLM_CONFIG_GUIDE.md](LLM_CONFIG_GUIDE.md)，系统讲解三层配置、快速上手、Vision/Agent/Web UI/校验排错；同步更新 README、full-guide、.env.example、FAQ、英文版指南
+
 ## [3.4.10] - 2026-03-07
 
 ### Fixed

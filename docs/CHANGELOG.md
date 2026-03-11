@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 - **问股取消与切换** (#495) — 用户取消流式请求时不再误报为失败；快速切换会话时不再覆盖新 stream 状态
+- fix(status): add MiniMax search status display in /status command (#587)
 
 ## [3.4.10] - 2026-03-07
 

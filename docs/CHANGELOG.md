@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - ⚙️ **GitHub Actions LiteLLM 配置支持** — 工作流新增 `LITELLM_CONFIG`、`LITELLM_API_KEY`、`LITELLM_MODEL`、`LITELLM_CONFIG_YAML` 环境变量，支持使用提交 `litellm_config.yaml` 文件方式，或将 `litellm_config.yaml` 配置写入 GitHub Actions Variables 或 Secret 的方式，以实现灵活配置所有 AI 提供商（包括 siliconflow、AIHubMix 等），与本地环境保持一致；配置诊断步骤新增 LiteLLM 状态检查；`litellm_config.example.yaml` 新增 siliconflow 提供商配置示例
 - 🤖 **Agent models discovery API** — 新增 `GET /api/v1/agent/models`，返回当前配置下的可用模型部署列表（含 `primary`/`fallback`/`source`/`api_base` 元数据），供 Web UI 模型选择器直接使用
 ### Fixed
+- 🐛 **analyze_trend 始终报 No historical data** (#600) — 根因：错误依赖 get_analysis_context 的 raw_data（该接口从未返回）；修复：改为优先 db.get_data_range、备选 DataFetcherManager 获取历史数据，与 pipeline 一致
 - 🐛 **筹码结构 LLM 未填写时兜底补全** (#589) — DeepSeek 等模型未正确填写 `chip_structure` 时，自动用数据源已获取的筹码数据补全，保证各模型展示一致；普通分析与 Agent 模式均生效
 - 🐛 **历史报告狙击点位显示原始文本** (#452) — 历史详情页现优先展示 `raw_result.dashboard.battle_plan.sniper_points` 中的原始字符串，避免 `analysis_history` 数值列把区间、说明文字或复杂点位压缩成单个数字；保留原有数值列作为回退
 - 🐛 **`.env` 设置保存保留注释与空行** — Web 设置页更新配置时不再破坏原有 `.env` 注释、空白分隔和未知行格式，降低手工维护配置文件的冲突风险

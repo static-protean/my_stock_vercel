@@ -9,6 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- Portfolio P0 PR1 core ledger and snapshot workflow:
+  - Added portfolio account/event/snapshot models and API endpoints.
+  - Added replay engine with FIFO/AVG cost method.
+  - Added deterministic same-day ordering: `cash -> corporate action -> trade`.
+  - Added atomic persistence for position cache, lot cache, and daily snapshot.
+- Portfolio P0 PR2 import and risk capability:
+  - Added broker CSV parse/commit flow (`huatai` / `citic` / `cmb`).
+  - Added dedup fallback by key-field hash when `trade_uid` is absent.
+  - Added risk report API for concentration, drawdown and stop-loss proximity.
+  - Added FX refresh API with stale fallback behavior.
+- Portfolio P0 PR3 web and agent consumption capability:
+  - Added Web route `/portfolio` with snapshot/risk consumption.
+  - Added concentration pie chart view (Top Positions) via Recharts.
+  - Added `get_portfolio_snapshot` Agent data tool with compact-by-default output and optional detailed positions.
+- Portfolio P0 PR4 gap closure capability:
+  - Added portfolio event query APIs (`GET /portfolio/trades`, `GET /portfolio/cash-ledger`, `GET /portfolio/corporate-actions`) with filters and pagination.
+  - Added extensible CSV parser registry and broker discovery API (`GET /portfolio/imports/csv/brokers`).
+  - Added Web manual entry forms (trade/cash/corporate action), inline account creation entry, CSV parse/commit entry, and event list view.
+  - Added risk `sector_concentration` block with A-share board mapping and `UNCLASSIFIED` fail-open fallback.
+  - Added broker selector UI fail-open fallback to built-in brokers when broker discovery API fails or returns empty.
+
+### Changed
+- `POST /api/v1/portfolio/trades` now returns `409` on duplicate `trade_uid` conflict within the same account.
+- Portfolio risk response now includes additive `sector_concentration` field; existing `concentration` remains unchanged for compatibility.
+
+### Fixed
+- Portfolio CSV import dedup now persists/checks key-field hash even when `trade_uid` exists, preventing mixed-source duplicate writes (with/without `trade_uid`) for the same trade.
+- Portfolio risk drawdown now backfills missing daily snapshots inside the configured lookback window on first report call, avoiding cache-warmup dependent underestimation.
+
+### Tests
+- Added PR1 tests for replay edge cases and API conflict handling.
+- Added PR2 tests for import idempotency, dedup edge cases, threshold boundaries, and FX stale fallback.
+
 ## [3.6.0] - 2026-03-14
 
 ### Added

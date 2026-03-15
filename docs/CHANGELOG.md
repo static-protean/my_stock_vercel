@@ -9,39 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-### Added
-- Portfolio P0 PR1 core ledger and snapshot workflow:
-  - Added portfolio account/event/snapshot models and API endpoints.
-  - Added replay engine with FIFO/AVG cost method.
-  - Added deterministic same-day ordering: `cash -> corporate action -> trade`.
-  - Added atomic persistence for position cache, lot cache, and daily snapshot.
-- Portfolio P0 PR2 import and risk capability:
-  - Added broker CSV parse/commit flow (`huatai` / `citic` / `cmb`).
-  - Added dedup fallback by key-field hash when `trade_uid` is absent.
-  - Added risk report API for concentration, drawdown and stop-loss proximity.
-  - Added FX refresh API with stale fallback behavior.
-- Portfolio P0 PR3 web and agent consumption capability:
-  - Added Web route `/portfolio` with snapshot/risk consumption.
-  - Added concentration pie chart view (Top Positions) via Recharts.
-  - Added `get_portfolio_snapshot` Agent data tool with compact-by-default output and optional detailed positions.
-- Portfolio P0 PR4 gap closure capability:
-  - Added portfolio event query APIs (`GET /portfolio/trades`, `GET /portfolio/cash-ledger`, `GET /portfolio/corporate-actions`) with filters and pagination.
-  - Added extensible CSV parser registry and broker discovery API (`GET /portfolio/imports/csv/brokers`).
-  - Added Web manual entry forms (trade/cash/corporate action), inline account creation entry, CSV parse/commit entry, and event list view.
-  - Added risk `sector_concentration` block with A-share board mapping and `UNCLASSIFIED` fail-open fallback.
-  - Added broker selector UI fail-open fallback to built-in brokers when broker discovery API fails or returns empty.
+## [3.7.0] - 2026-03-15
 
-### Changed
-- `POST /api/v1/portfolio/trades` now returns `409` on duplicate `trade_uid` conflict within the same account.
-- Portfolio risk response now includes additive `sector_concentration` field; existing `concentration` remains unchanged for compatibility.
+### 新功能
 
-### Fixed
-- Portfolio CSV import dedup now persists/checks key-field hash even when `trade_uid` exists, preventing mixed-source duplicate writes (with/without `trade_uid`) for the same trade.
-- Portfolio risk drawdown now backfills missing daily snapshots inside the configured lookback window on first report call, avoiding cache-warmup dependent underestimation.
+- 💼 **持仓管理 P0 全功能上线**（#677，对应 Issue #627）
+  - **核心账本与快照闭环**：新增账户、交易、现金流水、企业行为、持仓缓存、每日快照等核心数据模型与 API 端点；支持 FIFO / AVG 双成本法回放；同日事件顺序固定为 `现金 → 企业行为 → 交易`；持仓快照写入采用原子事务。
+  - **券商 CSV 导入**：支持华泰 / 中信 / 招商首批适配，含列名别名兼容；两阶段接口（解析预览 + 确认提交）；`trade_uid` 优先、key-field hash 兜底的幂等去重；前导零股票代码完整保留。
+  - **组合风险报告**：集中度风险（Top Positions + A 股板块口径）、历史回撤监控（支持回填缺失快照）、止损接近预警；多币种统一换算 CNY 口径；汲取失败时回退最近成功汇率并标记 stale。
+  - **Web 持仓页**（`/portfolio`）：组合总览、持仓明细、集中度饼图、风险摘要、全组合 / 单账户切换；手工录入交易 / 资金流水 / 企业行为；内嵌账户创建入口；CSV 解析 + 提交闭环与券商选择器。
+  - **Agent 持仓工具**：新增 `get_portfolio_snapshot` 数据工具，默认紧凑摘要，可选持仓明细与风险数据。
+  - **事件查询 API**：新增 `GET /portfolio/trades`、`GET /portfolio/cash-ledger`、`GET /portfolio/corporate-actions`，支持日期过滤与分页。
+  - **可扩展 Parser Registry**：应用级共享注册，支持运行时注册新券商；新增 `GET /portfolio/imports/csv/brokers` 发现接口。
 
-### Tests
-- Added PR1 tests for replay edge cases and API conflict handling.
-- Added PR2 tests for import idempotency, dedup edge cases, threshold boundaries, and FX stale fallback.
+- 🎨 **前端设计系统与原子组件库**（#662）
+  - 引入渐进式双主题架构（HSL 变量化设计令牌），清理历史 Legacy CSS；重构 Button / Card / Badge / Collapsible / Input / Select 等 20+ 核心组件；新增 `clsx` + `tailwind-merge` 类名合并工具；提升历史记录、LLM 配置等页面可读性。
+
+- ⚡ **分析 API 异步契约与启动优化**（#656）
+  - 规范 `POST /api/v1/analysis/analyze` 异步请求的返回契约；优化服务启动辅助逻辑；修复前端报告类型联合定义与后端响应对齐问题。
+
+### 修复
+
+- 🔔 **Discord 环境变量向后兼容**（#659）：运行时新增 `DISCORD_CHANNEL_ID` → `DISCORD_MAIN_CHANNEL_ID` 的 fallback 读取；历史配置用户无需修改即可恢复 Discord Bot 通知；全部相关文档与 `.env.example` 对齐。
+- 🔧 **GitHub Actions Node 24 升级**（#665）：将所有 GitHub 官方 actions 升级至 Node 24 兼容版本，消除 CI 日志中的 Node.js 20 deprecation warning（影响 2026-06-02 强制升级窗口）。
+- 📅 **持仓页默认日期本地化**：手工录入表单默认日期改用本地时间（`getFullYear/Month/Date`），修复 UTC-N 时区用户在当天晚间出现日期偏移的问题。
+- 🔁 **CSV 导入去重逻辑加固**：dedup hash 纳入行序号作为区分因子，确保同字段合法分笔成交不被误折叠；同时在 `trade_uid` 存在时也持久化 hash，防止混合来源重复写入。
+
+### 变更
+
+- `POST /api/v1/portfolio/trades` 在同账户内 `trade_uid` 冲突时返回 `409`。
+- 持仓风险响应新增 `sector_concentration` 字段（增量扩展），原有 `concentration` 字段保持不变。
+- 分析 API `analyze` 接口异步行为契约文档化；前端报告类型联合更新。
+
+### 测试
+
+- 新增持仓核心服务测试（FIFO / AVG 部分卖出、同日事件顺序、重复 `trade_uid` 返回 409、快照 API 契约）。
+- 新增 CSV 导入幂等性、合法分笔成交不误去重、去重边界、风险阈值边界、汇率降级行为测试。
+- 新增 Agent `get_portfolio_snapshot` 工具调用测试。
+- 新增分析 API 异步契约回归测试。
 
 ## [3.6.0] - 2026-03-14
 

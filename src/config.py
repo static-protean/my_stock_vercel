@@ -920,7 +920,10 @@ class Config:
             custom_webhook_bearer_token=os.getenv('CUSTOM_WEBHOOK_BEARER_TOKEN'),
             webhook_verify_ssl=os.getenv('WEBHOOK_VERIFY_SSL', 'true').lower() == 'true',
             discord_bot_token=os.getenv('DISCORD_BOT_TOKEN'),
-            discord_main_channel_id=os.getenv('DISCORD_MAIN_CHANNEL_ID'),
+            discord_main_channel_id=(
+                os.getenv('DISCORD_MAIN_CHANNEL_ID')
+                or os.getenv('DISCORD_CHANNEL_ID')
+            ),
             discord_webhook_url=os.getenv('DISCORD_WEBHOOK_URL'),
             astrbot_url=os.getenv('ASTRBOT_URL'),
             astrbot_token=os.getenv('ASTRBOT_TOKEN'),

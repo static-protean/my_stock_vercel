@@ -97,7 +97,7 @@ Go to your forked repo → `Settings` → `Secrets and variables` → `Actions` 
 | `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID (For sending to topics) | Optional |
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | Optional |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token (choose one with Webhook) | Optional |
-| `DISCORD_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
+| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID (required when using Bot) | Optional |
 | `EMAIL_SENDER` | Sender email (e.g., `xxx@qq.com`) | Optional |
 | `EMAIL_PASSWORD` | Email authorization code (not login password) | Optional |
 | `EMAIL_RECEIVERS` | Receiver emails (comma-separated, leave empty to send to yourself) | Optional |
@@ -256,7 +256,7 @@ DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/xxx/yyy
 Bot:
 ```bash
 DISCORD_BOT_TOKEN=your_bot_token
-DISCORD_CHANNEL_ID=your_channel_id
+DISCORD_MAIN_CHANNEL_ID=your_channel_id
 ```
 
 ### 3. Email

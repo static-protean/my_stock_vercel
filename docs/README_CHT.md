@@ -95,7 +95,7 @@
 | `TELEGRAM_MESSAGE_THREAD_ID` | Telegram Topic ID (用於發送到子話題) | 可選 |
 | `DISCORD_WEBHOOK_URL` | Discord Webhook URL | 可選 |
 | `DISCORD_BOT_TOKEN` | Discord Bot Token（與 Webhook 二選一） | 可選 |
-| `DISCORD_CHANNEL_ID` | Discord Channel ID（使用 Bot 時需要） | 可選 |
+| `DISCORD_MAIN_CHANNEL_ID` | Discord Channel ID（使用 Bot 時需要） | 可選 |
 | `EMAIL_SENDER` | 發件人郵箱（如 `xxx@qq.com`） | 可選 |
 | `EMAIL_PASSWORD` | 郵箱授權碼（非登錄密碼） | 可選 |
 | `EMAIL_RECEIVERS` | 收件人郵箱（多個用逗號分隔，留空則發給自己） | 可選 |

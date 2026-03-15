@@ -430,6 +430,8 @@ Enable the FastAPI service for configuration management and triggering analysis 
 | `/api/v1/agent/chat/stream` | POST (SSE) | Stream multi-turn Agent strategy chat |
 | `/api/health` | GET | Health check |
 
+> Note: `POST /api/v1/analysis/analyze` supports only one stock when `async_mode=false`; batch `stock_codes` requires `async_mode=true`. The async `202` response returns a single `task_id` for one stock, or an `accepted` / `duplicates` summary for batch requests.
+
 > For detailed instructions, see [Full Guide - API Service](full-guide_EN.md#fastapi-api-service)
 
 ---

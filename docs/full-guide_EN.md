@@ -653,6 +653,8 @@ FastAPI provides RESTful API service for configuration management and triggering
 | `/api/health` | GET | Health check |
 | `/docs` | GET | API Swagger documentation |
 
+> Note: `POST /api/v1/analysis/analyze` supports only one stock when `async_mode=false`; batch `stock_codes` requires `async_mode=true`. The async `202` response returns a single `task_id` for one stock, or an `accepted` / `duplicates` summary for batch requests.
+
 **Usage examples**:
 ```bash
 # Health check

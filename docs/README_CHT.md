@@ -224,6 +224,8 @@
 | `/api/v1/agent/chat/stream` | POST (SSE) | Agent 多輪策略對話（流式） |
 | `/api/health` | GET | 健康檢查 |
 
+> 備註：`POST /api/v1/analysis/analyze` 在 `async_mode=false` 時僅支援單一股票；批量 `stock_codes` 需使用 `async_mode=true`。異步 `202` 對單股回傳 `task_id`，對批量回傳 `accepted` / `duplicates` 匯總。
+
 ## 項目結構
 
 ```

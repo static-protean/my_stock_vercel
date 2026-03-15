@@ -4,7 +4,7 @@
 
 > 💡 快速上手请参考 [README.md](../README.md)，本文档为进阶配置。
 
-## � 项目结构
+## 📁 项目结构
 
 ```
 daily_stock_analysis/
@@ -832,6 +832,8 @@ FastAPI 提供 RESTful API 服务，支持配置管理和触发分析。
 | `/api/v1/stocks/parse-import` | POST | 解析 CSV/Excel/剪贴板（multipart file 或 JSON `{"text":"..."}`，文件≤2MB，文本≤100KB） |
 | `/api/health` | GET | 健康检查 |
 | `/docs` | GET | API Swagger 文档 |
+
+> 说明：`POST /api/v1/analysis/analyze` 在 `async_mode=false` 时仅支持单只股票；批量 `stock_codes` 需使用 `async_mode=true`。异步 `202` 响应对单股返回 `task_id`，对批量返回 `accepted` / `duplicates` 汇总结构。
 
 **调用示例**：
 ```bash

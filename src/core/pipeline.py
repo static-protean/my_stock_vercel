@@ -29,9 +29,11 @@ from src.analyzer import GeminiAnalyzer, AnalysisResult, fill_chip_structure_if_
 from src.data.stock_mapping import STOCK_NAME_MAP
 from src.notification import NotificationService, NotificationChannel
 from src.search_service import SearchService
+from src.services.social_sentiment_service import SocialSentimentService
 from src.enums import ReportType
 from src.stock_analyzer import StockTrendAnalyzer, TrendAnalysisResult
 from src.core.trading_calendar import get_market_for_stock, is_market_open
+from data_provider.us_index_mapping import is_us_stock_code
 from bot.models import BotMessage
 
 
@@ -106,6 +108,14 @@ class StockAnalysisPipeline:
             logger.info("搜索服务已启用 (Tavily/SerpAPI)")
         else:
             logger.warning("搜索服务未启用（未配置 API Key）")
+
+        # 初始化社交舆情服务（仅美股）
+        self.social_sentiment_service = SocialSentimentService(
+            api_key=self.config.social_sentiment_api_key,
+            api_url=self.config.social_sentiment_api_url,
+        )
+        if self.social_sentiment_service.is_available:
+            logger.info("Social sentiment service enabled (Reddit/X/Polymarket, US stocks only)")
 
     def fetch_and_save_stock_data(
         self, 
@@ -326,6 +336,19 @@ class StockAnalysisPipeline:
                         logger.warning(f"{stock_name}({code}) 保存新闻情报失败: {e}")
             else:
                 logger.info(f"{stock_name}({code}) 搜索服务不可用，跳过情报搜索")
+
+            # Step 4.5: Social sentiment intelligence (US stocks only)
+            if self.social_sentiment_service.is_available and is_us_stock_code(code):
+                try:
+                    social_context = self.social_sentiment_service.get_social_context(code)
+                    if social_context:
+                        logger.info(f"{stock_name}({code}) Social sentiment data retrieved")
+                        if news_context:
+                            news_context = news_context + "\n\n" + social_context
+                        else:
+                            news_context = social_context
+                except Exception as e:
+                    logger.warning(f"{stock_name}({code}) Social sentiment fetch failed: {e}")
 
             # Step 5: 获取分析上下文（技术面数据）
             context = self.db.get_analysis_context(code)
@@ -590,6 +613,22 @@ class StockAnalysisPipeline:
                 initial_context["chip_distribution"] = self._safe_to_dict(chip_data)
             if trend_result:
                 initial_context["trend_result"] = self._safe_to_dict(trend_result)
+
+            # Agent path: inject social sentiment as news_context so both
+            # executor (_build_user_message) and orchestrator (ctx.set_data)
+            # can consume it through the existing news_context channel
+            if self.social_sentiment_service.is_available and is_us_stock_code(code):
+                try:
+                    social_context = self.social_sentiment_service.get_social_context(code)
+                    if social_context:
+                        existing = initial_context.get("news_context")
+                        if existing:
+                            initial_context["news_context"] = existing + "\n\n" + social_context
+                        else:
+                            initial_context["news_context"] = social_context
+                        logger.info(f"[{code}] Agent mode: social sentiment data injected into news_context")
+                except Exception as e:
+                    logger.warning(f"[{code}] Agent mode: social sentiment fetch failed: {e}")
 
             # 运行 Agent
             message = f"请分析股票 {code} ({stock_name})，并生成决策仪表盘报告。"

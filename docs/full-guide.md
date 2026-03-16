@@ -889,6 +889,7 @@ python main.py --serve-only --host 0.0.0.0 --port 8888
 ### 注意事项
 
 - 浏览器访问：`http://127.0.0.1:8000`（或您配置的端口）
+- 在云服务器上部署后，不知道浏览器该输入什么地址？请看 [云服务器 Web 界面访问指南](deploy-webui-cloud.md)
 - 分析完成后自动推送通知到配置的渠道
 - 此功能在 GitHub Actions 环境中会自动禁用
 - 另见 [openclaw Skill 集成指南](openclaw-skill-integration.md)

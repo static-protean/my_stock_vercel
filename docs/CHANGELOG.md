@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### 新功能
 
 - 📱 **Social Sentiment Intelligence (US stocks)** — 新增 Reddit / X (Twitter) / Polymarket 社交媒体情绪数据源，为美股分析提供实时社交舆情情报。数据来自 api.adanos.org，包含 Buzz Score、情绪评分、提及量等指标。完全可选（需配置 `SOCIAL_SENTIMENT_API_KEY`），仅对美股生效，A 股 / 港股不受影响。
+- 🔍 **接入Tushare筹码、行业板块涨跌接口** — 新增 Tushare筹码分布、行业板块涨跌接口获取；修复筹码分布判断部分错误；将筹码分布与行业板块的数据源优先级改为与实时行情获取优先级一致，均在.env配置；默认在上海时间19点之后才能用Tushare获取当天交易日的筹码分布，盘后获取当天交易日的行业板块涨跌，否则用前一个交易日的；行业板块涨跌受数据源影响，结果会不一致，优先使用Tushare的同花顺接口、其次东财接口。
+
 ### 文档
 
 - 新增云服务器 Web 界面部署与访问教程 (Fixes #686)

@@ -936,6 +936,7 @@ A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是
 
 ### Error and stability semantics
 - `trade_uid` unique conflict returns `409` (API conflict semantics).
+- sell writes now validate available quantity before insert; oversell is rejected with `409 portfolio_oversell`.
 - Snapshot write path is atomic for positions/lots/daily snapshot.
 - FX conversion keeps fail-open behavior (fallback 1:1 with stale marker) to avoid pipeline interruption.
 
@@ -1003,6 +1004,10 @@ A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是
   - `GET /api/v1/portfolio/trades`
   - `GET /api/v1/portfolio/cash-ledger`
   - `GET /api/v1/portfolio/corporate-actions`
+- Added event delete endpoints:
+  - `DELETE /api/v1/portfolio/trades/{trade_id}`
+  - `DELETE /api/v1/portfolio/cash-ledger/{entry_id}`
+  - `DELETE /api/v1/portfolio/corporate-actions/{action_id}`
 - Unified query parameters:
   - `account_id`, `date_from`, `date_to`, `page`, `page_size`
 - Trade/cash/corporate-action specific filters:
@@ -1024,6 +1029,7 @@ A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是
   - manual event entry forms: trade / cash / corporate action
   - CSV parse + commit operations (supports `dry_run`)
   - event list panel with filters and pagination
+  - single-account scoped event deletion for trade / cash / corporate action correction
   - broker selector fallback to built-in brokers (`huatai/citic/cmb`) when broker list API fails or returns empty
 
 ### Risk sector concentration semantics

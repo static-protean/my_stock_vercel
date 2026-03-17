@@ -1793,8 +1793,59 @@ class DataFetcherManager:
         growth_payload = bundle_payload.get("growth", {}) if isinstance(bundle_payload, dict) else {}
         earnings_payload = bundle_payload.get("earnings", {}) if isinstance(bundle_payload, dict) else {}
         institution_payload = bundle_payload.get("institution", {}) if isinstance(bundle_payload, dict) else {}
+        if not isinstance(growth_payload, dict):
+            growth_payload = {}
+        else:
+            growth_payload = dict(growth_payload)
+        if not isinstance(earnings_payload, dict):
+            earnings_payload = {}
+        else:
+            earnings_payload = dict(earnings_payload)
+        if not isinstance(institution_payload, dict):
+            institution_payload = {}
+        else:
+            institution_payload = dict(institution_payload)
+
+        # Derive TTM dividend yield from already-fetched quote price; avoid extra quote calls.
+        earnings_extra_errors: List[str] = []
+        dividend_payload = earnings_payload.get("dividend")
+        if isinstance(dividend_payload, dict):
+            dividend_payload = dict(dividend_payload)
+            ttm_cash_raw = dividend_payload.get("ttm_cash_dividend_per_share")
+            ttm_cash = None
+            if ttm_cash_raw is not None:
+                try:
+                    ttm_cash = float(ttm_cash_raw)
+                except (TypeError, ValueError):
+                    earnings_extra_errors.append("invalid_ttm_cash_dividend_per_share")
+            if isinstance(quote_payload, dict):
+                latest_price_raw = quote_payload.get("price")
+            else:
+                latest_price_raw = getattr(quote_payload, "price", None) if quote_payload else None
+            latest_price = None
+            if latest_price_raw is not None:
+                try:
+                    latest_price = float(latest_price_raw)
+                except (TypeError, ValueError):
+                    latest_price = None
+            ttm_yield = None
+            if ttm_cash is not None:
+                if latest_price is not None and latest_price > 0:
+                    ttm_yield = round(ttm_cash / latest_price * 100.0, 4)
+                else:
+                    earnings_extra_errors.append("invalid_price_for_ttm_dividend_yield")
+
+            dividend_payload["ttm_dividend_yield_pct"] = ttm_yield
+            if ttm_yield is not None:
+                dividend_payload["yield_formula"] = "ttm_cash_dividend_per_share / latest_price * 100"
+            earnings_payload["dividend"] = dividend_payload
+
         adapter_errors = list(bundle_payload.get("errors", [])) if isinstance(bundle_payload, dict) else []
         adapter_errors.extend(bundle_errors)
+        growth_errors = list(adapter_errors)
+        earnings_errors = list(adapter_errors)
+        earnings_errors.extend(earnings_extra_errors)
+        institution_errors = list(adapter_errors)
 
         growth_status = self._infer_block_status(growth_payload, bundle_status)
         earnings_status = self._infer_block_status(earnings_payload, bundle_status)
@@ -1804,19 +1855,19 @@ class DataFetcherManager:
             growth_status,
             growth_payload,
             bundle_chain,
-            adapter_errors,
+            growth_errors,
         )
         result_ctx["earnings"] = self._build_fundamental_block(
             earnings_status,
             earnings_payload,
             bundle_chain,
-            adapter_errors,
+            earnings_errors,
         )
         result_ctx["institution"] = self._build_fundamental_block(
             institution_status,
             institution_payload,
             bundle_chain,
-            adapter_errors,
+            institution_errors,
         )
 
         # capital flow

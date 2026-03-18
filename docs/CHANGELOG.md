@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### 说明
 
-- 暂无。
+- 🚀 **Agent 与普通分析模型解耦（Issue #692）** — 新增 `AGENT_LITELLM_MODEL`（留空继承 `LITELLM_MODEL`，无前缀按 `openai/<model>` 归一）；Agent 执行链路与 `/api/v1/agent/models` 的 `is_primary/is_fallback` 标记改为基于 Agent 实际模型链路；系统配置与启动期校验补齐 `AGENT_LITELLM_MODEL` 的 `unknown_model/missing_runtime_source` 检查；Web 设置页新增 Agent 主模型选择并与渠道模式运行时配置同步。
 
 ## [3.8.0] - 2026-03-17
 

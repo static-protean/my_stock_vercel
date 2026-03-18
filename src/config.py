@@ -244,6 +244,60 @@ def _uses_direct_env_provider(model: str) -> bool:
     return bool(provider) and provider not in _MANAGED_LITELLM_KEY_PROVIDERS
 
 
+def normalize_agent_litellm_model(
+    model: str,
+    configured_models: Optional[set[str]] = None,
+) -> str:
+    """Normalize AGENT_LITELLM_MODEL while preserving configured router aliases."""
+    normalized_model = (model or "").strip()
+    if not normalized_model:
+        return ""
+    if "/" not in normalized_model:
+        if configured_models and normalized_model in configured_models:
+            return normalized_model
+        return f"openai/{normalized_model}"
+    return normalized_model
+
+
+def get_effective_agent_primary_model(config: "Config") -> str:
+    """Return the effective Agent primary model with fallback inheritance."""
+    configured_router_models = set(
+        get_configured_llm_models(getattr(config, "llm_model_list", []) or [])
+    )
+    configured_agent_model = normalize_agent_litellm_model(
+        getattr(config, "agent_litellm_model", ""),
+        configured_models=configured_router_models,
+    )
+    if configured_agent_model:
+        return configured_agent_model
+    return (getattr(config, "litellm_model", "") or "").strip()
+
+
+def get_effective_agent_models_to_try(config: "Config") -> List[str]:
+    """Return Agent model try-order: primary + global fallbacks (deduped)."""
+    configured_router_models = set(
+        get_configured_llm_models(getattr(config, "llm_model_list", []) or [])
+    )
+    raw_models = [get_effective_agent_primary_model(config)] + (
+        getattr(config, "litellm_fallback_models", []) or []
+    )
+    seen = set()
+    ordered_models: List[str] = []
+    for model in raw_models:
+        normalized_model = (model or "").strip()
+        if not normalized_model:
+            continue
+        dedupe_key = normalize_agent_litellm_model(
+            normalized_model,
+            configured_models=configured_router_models,
+        )
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        ordered_models.append(normalized_model)
+    return ordered_models
+
+
 def setup_env(override: bool = False):
     """
     Initialize environment variables from .env file.
@@ -358,6 +412,7 @@ class Config:
     bias_threshold: float = 5.0  # 乖离率阈值（%），超过此值提示不追高
 
     # === Agent 模式配置 ===
+    agent_litellm_model: str = ""  # Optional Agent-only primary model; empty inherits LITELLM_MODEL
     agent_mode: bool = False
     _agent_mode_explicit: bool = False  # True when AGENT_MODE was explicitly set in env
     agent_max_steps: int = 10
@@ -817,6 +872,11 @@ class Config:
                 if m not in _seen and not _seen.add(m)  # type: ignore[func-returns-value]
             ]
 
+        agent_litellm_model = normalize_agent_litellm_model(
+            os.getenv('AGENT_LITELLM_MODEL', ''),
+            configured_models=set(get_configured_llm_models(llm_model_list)),
+        )
+
         # 解析搜索引擎 API Keys（支持多个 key，逗号分隔）
         bocha_keys_str = os.getenv('BOCHA_API_KEYS', '')
         bocha_api_keys = [k.strip() for k in bocha_keys_str.split(',') if k.strip()]
@@ -936,6 +996,7 @@ class Config:
                 os.getenv('NEWS_STRATEGY_PROFILE', 'short')
             ),
             bias_threshold=max(1.0, float(os.getenv('BIAS_THRESHOLD', '5.0'))),
+            agent_litellm_model=agent_litellm_model,
             agent_mode=os.getenv('AGENT_MODE', 'false').lower() == 'true',
             _agent_mode_explicit=os.getenv('AGENT_MODE') is not None,
             agent_max_steps=int(os.getenv('AGENT_MAX_STEPS', '10')),
@@ -1435,26 +1496,25 @@ class Config:
 
         Decision table:
 
-        +-----------------------+-------------------+---------+
-        | AGENT_MODE env        | LITELLM_MODEL set | Result  |
-        +-----------------------+-------------------+---------+
-        | ``true``              | any               | True    |
-        | ``false`` (explicit)  | any               | False   |
-        | not set (default)     | yes               | True    |
-        | not set (default)     | no                | False   |
-        +-----------------------+-------------------+---------+
+        +-----------------------+----------------------------------+---------+
+        | AGENT_MODE env        | effective Agent primary model set| Result  |
+        +-----------------------+----------------------------------+---------+
+        | ``true``              | any                              | True    |
+        | ``false`` (explicit)  | any                              | False   |
+        | not set (default)     | yes                              | True    |
+        | not set (default)     | no                               | False   |
+        +-----------------------+----------------------------------+---------+
 
         This keeps backward compatibility: users who never touch
-        ``AGENT_MODE`` get agent features automatically once they configure
-        a model, while ``AGENT_MODE=false`` acts as an explicit kill-switch.
+        ``AGENT_MODE`` get agent features automatically once they configure an
+        Agent-effective model, while ``AGENT_MODE=false`` acts as an explicit
+        kill-switch.
         """
         # Explicit AGENT_MODE takes full precedence
         if self._agent_mode_explicit:
             return self.agent_mode
-        # Auto-detect: if LITELLM_MODEL is set, agent is implicitly available
-        if self.litellm_model:
-            return True
-        return False
+        # Auto-detect: Agent inherits global model when AGENT_LITELLM_MODEL is empty.
+        return bool(get_effective_agent_primary_model(self))
 
     def refresh_stock_list(self) -> None:
         """
@@ -1546,6 +1606,24 @@ class Config:
 
         available_router_models = get_configured_llm_models(self.llm_model_list)
         available_router_model_set = set(available_router_models)
+
+        def _has_runtime_source_for_model(model: str) -> bool:
+            if not model or _uses_direct_env_provider(model):
+                return True
+            provider = _get_litellm_provider(model)
+            if provider in {"gemini", "vertex_ai"}:
+                return any(k and len(k) >= 8 for k in (self.gemini_api_keys or []))
+            if provider == "anthropic":
+                return any(k and len(k) >= 8 for k in (self.anthropic_api_keys or []))
+            if provider == "deepseek":
+                return any(k and len(k) >= 8 for k in (self.deepseek_api_keys or []))
+            if provider == "openai":
+                return any(k and len(k) >= 8 for k in (self.openai_api_keys or []))
+            return False
+
+        configured_agent_primary_model = bool((self.agent_litellm_model or "").strip())
+        effective_agent_primary_model = get_effective_agent_primary_model(self)
+
         if available_router_model_set:
             if (
                 self.litellm_model
@@ -1559,6 +1637,21 @@ class Config:
                         f" 当前可用模型：{', '.join(available_router_models[:6])}"
                     ),
                     field="LITELLM_MODEL",
+                ))
+
+            if (
+                configured_agent_primary_model
+                and effective_agent_primary_model
+                and not _uses_direct_env_provider(effective_agent_primary_model)
+                and effective_agent_primary_model not in available_router_model_set
+            ):
+                issues.append(ConfigIssue(
+                    severity="error",
+                    message=(
+                        "AGENT_LITELLM_MODEL 已配置，但当前渠道/配置文件中不存在该模型。"
+                        f" 当前可用模型：{', '.join(available_router_models[:6])}"
+                    ),
+                    field="AGENT_LITELLM_MODEL",
                 ))
 
             invalid_fallbacks = [
@@ -1589,6 +1682,19 @@ class Config:
                     ),
                     field="VISION_MODEL",
                 ))
+        elif (
+            configured_agent_primary_model
+            and effective_agent_primary_model
+            and not _has_runtime_source_for_model(effective_agent_primary_model)
+        ):
+            issues.append(ConfigIssue(
+                severity="error",
+                message=(
+                    "AGENT_LITELLM_MODEL 已配置，但未找到可用的运行时来源"
+                    "（启用渠道或匹配的 API Key）。"
+                ),
+                field="AGENT_LITELLM_MODEL",
+            ))
 
         # --- Search engine (informational only) ---
         if not (

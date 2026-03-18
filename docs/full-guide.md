@@ -161,6 +161,7 @@ daily_stock_analysis/
 | 变量名 | 说明 | 默认值 | 必填 |
 |--------|------|--------|:----:|
 | `LITELLM_MODEL` | 主模型，格式 `provider/model`（如 `gemini/gemini-2.5-flash`），推荐优先使用 | - | 否 |
+| `AGENT_LITELLM_MODEL` | Agent 主模型（可选）；留空继承 `LITELLM_MODEL`，无 provider 前缀按 `openai/<model>` 解析 | - | 否 |
 | `LITELLM_FALLBACK_MODELS` | 备选模型，逗号分隔 | - | 否 |
 | `LLM_CHANNELS` | 渠道名称列表（逗号分隔），配合 `LLM_{NAME}_*` 使用，详见 [LLM 配置指南](LLM_CONFIG_GUIDE.md) | - | 否 |
 | `LITELLM_CONFIG` | LiteLLM YAML 配置文件路径（高级） | - | 否 |

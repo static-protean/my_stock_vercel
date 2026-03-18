@@ -152,6 +152,7 @@ Default schedule: Every weekday at **18:00 (Beijing Time)** automatic execution.
 | Variable | Description | Default | Required |
 |--------|------|--------|:----:|
 | `LITELLM_MODEL` | Primary model, format `provider/model` (e.g. `gemini/gemini-2.5-flash`), recommended | - | No |
+| `AGENT_LITELLM_MODEL` | Optional Agent-only primary model; when empty it inherits `LITELLM_MODEL`, and bare names are normalized to `openai/<model>` | - | No |
 | `LITELLM_FALLBACK_MODELS` | Fallback models, comma-separated | - | No |
 | `LLM_CHANNELS` | Channel names (comma-separated), use with `LLM_{NAME}_*`, see [LLM Config Guide](LLM_CONFIG_GUIDE_EN.md) | - | No |
 | `LITELLM_CONFIG` | LiteLLM YAML config path (advanced) | - | No |

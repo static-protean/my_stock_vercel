@@ -940,6 +940,7 @@ A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是
 ### Error and stability semantics
 - `trade_uid` unique conflict returns `409` (API conflict semantics).
 - sell writes now validate available quantity before insert; oversell is rejected with `409 portfolio_oversell`.
+- portfolio source-event writes now serialize through a SQLite write lock; direct write/delete endpoints may return `409 portfolio_busy` when another ledger mutation is in progress.
 - Snapshot write path is atomic for positions/lots/daily snapshot.
 - FX conversion keeps fail-open behavior (fallback 1:1 with stale marker) to avoid pipeline interruption.
 
@@ -955,6 +956,7 @@ A: 检查是否启用了 Actions，以及 cron 表达式是否正确（注意是
 ### CSV import
 - Supported broker ids: `huatai`, `citic`, `cmb`.
 - Unified workflow: parse CSV into normalized records, then commit into portfolio trades.
+- Commit remains row-by-row instead of one long transaction; busy rows count into `failed_count` rather than converting the whole request to `409`.
 - Dedup policy:
   - First key: `trade_uid` (account-scoped)
   - Fallback key: deterministic hash of date/symbol/side/qty/price/fee/tax/currency

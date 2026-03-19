@@ -286,3 +286,12 @@ export interface PortfolioImportBrokerItem {
 export interface PortfolioImportBrokerListResponse {
   brokers: PortfolioImportBrokerItem[];
 }
+
+export interface PortfolioFxRefreshResponse {
+  asOf: string;
+  accountCount: number;
+  pairCount: number;
+  updatedCount: number;
+  staleCount: number;
+  errorCount: number;
+}

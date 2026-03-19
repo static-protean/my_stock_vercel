@@ -767,4 +767,14 @@ A: Check if Actions is enabled, and if cron expression is correct (note it's UTC
 
 ---
 
+## Portfolio Web Notes
+
+### Manual FX refresh on `/portfolio`
+
+- The FX status card on the Web `/portfolio` page includes a manual refresh action.
+- The button calls the existing `POST /api/v1/portfolio/fx/refresh` endpoint and reloads snapshot/risk data only.
+- If upstream FX fetch fails, the page may still remain stale after refresh and will explain the fallback result inline.
+
+---
+
 For more questions, please [submit an Issue](https://github.com/ZhuLinsen/daily_stock_analysis/issues)

@@ -90,6 +90,8 @@ class StockAnalysisPipeline:
             brave_keys=self.config.brave_api_keys,
             serpapi_keys=self.config.serpapi_keys,
             minimax_keys=self.config.minimax_api_keys,
+            searxng_base_urls=self.config.searxng_base_urls,
+            searxng_public_instances_enabled=self.config.searxng_public_instances_enabled,
             news_max_age_days=self.config.news_max_age_days,
             news_strategy_profile=getattr(self.config, "news_strategy_profile", "short"),
         )
@@ -106,9 +108,9 @@ class StockAnalysisPipeline:
         else:
             logger.info("筹码分布分析已禁用")
         if self.search_service.is_available:
-            logger.info("搜索服务已启用 (Tavily/SerpAPI)")
+            logger.info("搜索服务已启用")
         else:
-            logger.warning("搜索服务未启用（未配置 API Key）")
+            logger.warning("搜索服务未启用（未配置搜索能力）")
 
         # 初始化社交舆情服务（仅美股）
         self.social_sentiment_service = SocialSentimentService(

@@ -120,6 +120,7 @@ class TestAgentResultConversion(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True
@@ -321,6 +322,7 @@ class TestPipelineRouting(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True
@@ -366,6 +368,7 @@ class TestPipelineRouting(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True
@@ -417,6 +420,7 @@ class TestAnalyzeWithAgentStockName(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True
@@ -625,6 +629,7 @@ class TestSafeInt(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True
@@ -766,6 +771,7 @@ class TestSkillActivation(unittest.TestCase):
             mock_cfg.brave_api_keys = []
             mock_cfg.serpapi_keys = []
             mock_cfg.searxng_base_urls = []
+            mock_cfg.searxng_public_instances_enabled = False
             mock_cfg.news_max_age_days = 7
             mock_cfg.enable_realtime_quote = True
             mock_cfg.enable_chip_distribution = True

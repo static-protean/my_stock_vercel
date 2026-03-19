@@ -83,6 +83,25 @@ class SystemConfigServiceTestCase(unittest.TestCase):
         self.assertFalse(validation["valid"])
         self.assertTrue(any(issue["code"] == "invalid_url" for issue in validation["issues"]))
 
+    def test_validate_reports_invalid_public_searxng_toggle(self) -> None:
+        validation = self.service.validate(
+            items=[{"key": "SEARXNG_PUBLIC_INSTANCES_ENABLED", "value": "maybe"}]
+        )
+        self.assertFalse(validation["valid"])
+        self.assertTrue(any(issue["code"] == "invalid_type" for issue in validation["issues"]))
+
+    def test_update_persists_public_searxng_toggle(self) -> None:
+        old_version = self.manager.get_config_version()
+        response = self.service.update(
+            config_version=old_version,
+            items=[{"key": "SEARXNG_PUBLIC_INSTANCES_ENABLED", "value": "false"}],
+            reload_now=False,
+        )
+
+        self.assertTrue(response["success"])
+        current_map = self.manager.read_config_map()
+        self.assertEqual(current_map["SEARXNG_PUBLIC_INSTANCES_ENABLED"], "false")
+
     def test_validate_reports_invalid_llm_channel_definition(self) -> None:
         validation = self.service.validate(
             items=[

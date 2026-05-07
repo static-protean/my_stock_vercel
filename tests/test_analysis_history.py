@@ -25,7 +25,7 @@ except ModuleNotFoundError:
 
 try:
     from fastapi.testclient import TestClient
-    from api.app import create_app
+    from api._app import create_app
     from api.v1.endpoints.history import get_history_detail
 except ModuleNotFoundError:
     TestClient = None

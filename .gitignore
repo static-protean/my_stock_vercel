@@ -74,7 +74,6 @@ verify_*.py
 !.claude/skills/
 !.claude/skills/**
 
-# ignore static files
-static/
+# 排除桌面端构建产物
 /apps/dsa-desktop/dist/
 /apps/dsa-desktop/node_modules/

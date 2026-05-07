@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 
-from api.deps import get_database_manager
+from api._deps import get_database_manager
 from api.v1.schemas.usage import UsageSummaryResponse
 from src.storage import DatabaseManager
 

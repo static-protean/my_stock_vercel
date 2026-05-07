@@ -7,7 +7,7 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from api.deps import get_system_config_service
+from api._deps import get_system_config_service
 from api.v1.schemas.common import ErrorResponse
 from api.v1.schemas.system_config import (
     SystemConfigConflictResponse,

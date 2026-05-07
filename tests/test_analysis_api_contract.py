@@ -15,7 +15,7 @@ from tests.litellm_stub import ensure_litellm_stub
 ensure_litellm_stub()
 
 try:
-    from api.app import create_app
+    from api._app import create_app
     from api.v1.endpoints.analysis import (
         trigger_analysis,
         _build_analysis_report,

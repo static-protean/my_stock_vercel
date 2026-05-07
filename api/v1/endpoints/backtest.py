@@ -8,7 +8,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from api.deps import get_database_manager
+from api._deps import get_database_manager
 from api.v1.schemas.backtest import (
     BacktestRunRequest,
     BacktestRunResponse,

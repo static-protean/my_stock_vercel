@@ -20,7 +20,7 @@ except ModuleNotFoundError:
     sys.modules["litellm"] = MagicMock()
 
 import src.auth as auth
-from api.app import create_app
+from api._app import create_app
 from src.config import Config
 from src.services.portfolio_import_service import PortfolioImportService
 from src.services.portfolio_risk_service import PortfolioRiskService

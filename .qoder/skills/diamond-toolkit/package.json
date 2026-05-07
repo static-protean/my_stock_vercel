@@ -1,0 +1,1 @@
+{"name":"diamond-toolkit","version":"0.2.0","description":"Diamond 配置管理工具。当用户提到 Diamond、配置查询、配置获取、配置发布、Diamond 发布、MSE 配置中心、dataId、groupId、配置对比、配置变更时使用。支持从预发环境获取配置内容（API 优先），以及通过 OpenAPI 校验、查单、发布配置。","publishConfig":{"registry":"https://contextlab.alibaba-inc.com/skill"}}

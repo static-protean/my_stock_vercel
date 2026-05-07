@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>股票智能分析 - Telegram 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0a0e17 0%, #1a1a2e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #e2e8f0;
+        }
+        .login-card {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 3rem 2.5rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: #f1f5f9;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+        .tg-login-wrapper {
+            display: flex;
+            justify-content: center;
+            min-height: 52px;
+            margin-bottom: 1rem;
+        }
+        .loading {
+            color: #64748b;
+            font-size: 0.85rem;
+            padding: 0.5rem 0;
+        }
+        .error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            display: none;
+        }
+        .error-msg.visible {
+            display: block;
+        }
+        .footer {
+            font-size: 0.75rem;
+            color: #475569;
+            border-top: 1px solid #1e293b;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="logo">📈</div>
+        <h1>A股智能分析</h1>
+        <p class="subtitle">使用 Telegram 账号一键登录</p>
+
+        <div id="tg-login-wrapper" class="tg-login-wrapper">
+            <p class="loading">正在加载登录方式...</p>
+        </div>
+
+        <p id="error-msg" class="error-msg"></p>
+
+        <div class="footer">
+            安全登录 · 仅用于验证身份<br />
+            首次登录将自动创建你的账号
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════
+        //  !!! 替换为你的 Bot 用户名（不含 @） !!!
+        // ═══════════════════════════════════════════════
+        const BOT_USERNAME = "YOUR_BOT_USERNAME_HERE";
+        // ═══════════════════════════════════════════════
+
+        const wrapper = document.getElementById("tg-login-wrapper");
+        const errorEl = document.getElementById("error-msg");
+
+        function showError(msg) {
+            errorEl.textContent = msg;
+            errorEl.classList.add("visible");
+        }
+
+        // ── Called by Telegram Widget on successful auth ──
+        async function onTelegramAuth(user) {
+            wrapper.innerHTML = '<p class="loading">验证中，请稍候...</p>';
+
+            try {
+                const resp = await fetch("/api/auth/telegram/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(user),
+                });
+
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    showError(data.message || "验证失败，请重试");
+                    wrapper.innerHTML = "";
+                    renderWidget();
+                    return;
+                }
+
+                // Login successful — redirect to main app
+                window.location.href = "/app/";
+            } catch (err) {
+                showError("网络错误，请检查连接后重试");
+                wrapper.innerHTML = "";
+                renderWidget();
+            }
+        }
+
+        // ── Render the Telegram Login Widget ──
+        function renderWidget() {
+            wrapper.innerHTML = "";
+
+            if (typeof TelegramLoginWidget !== "undefined") {
+                // Use widget JS API
+                TelegramLoginWidget.create(
+                    {
+                        telegramLogin: BOT_USERNAME,
+                        size: "large",
+                        radius: 8,
+                        onAuth: function(user) { onTelegramAuth(user); },
+                        requestAccess: "write",
+                    },
+                    wrapper
+                );
+            } else {
+                // Fallback: render button manually
+                wrapper.innerHTML =
+                    '<a href="https://oauth.telegram.org/auth?bot_id=' +
+                    BOT_USERNAME +
+                    '&origin=' + encodeURIComponent(window.location.origin) +
+                    '&return_to=' + encodeURIComponent(window.location.pathname) +
+                    '" class="tg-login-btn" style="display:inline-block;padding:10px 20px;background:#2AABEE;color:#fff;border-radius:8px;text-decoration:none;font-size:16px;">' +
+                    'Login with Telegram' +
+                    '</a>';
+            }
+        }
+
+        // ── Load Telegram Widget script ──
+        const script = document.createElement("script");
+        script.src = "https://telegram.org/js/telegram-widget.js?22";
+        script.setAttribute("data-telegram-login", BOT_USERNAME);
+        script.setAttribute("data-size", "large");
+        script.setAttribute("data-radius", "8");
+        script.setAttribute("data-onauth", "onTelegramAuth(user)");
+        script.setAttribute("data-request-access", "write");
+        script.async = true;
+        document.body.appendChild(script);
+
+        // Retry: if widget doesn't load within 5s, fall back
+        setTimeout(() => {
+            const hasWidget = document.querySelector(
+                'iframe[data-telegram-login], .tgme_widget_login_button'
+            );
+            if (!hasWidget && wrapper.querySelector(".loading")) {
+                wrapper.innerHTML = '<p class="loading">正在重试加载...</p>';
+                setTimeout(renderWidget, 2000);
+            }
+        }, 5000);
+
+        // Also render as fallback if script errors
+        script.onerror = renderWidget;
+    </script>
+</body>
+</html>

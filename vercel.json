@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/vercel_app.py": {
+      "includeFiles": "**/*",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/vercel_app.py" },
+    { "source": "/(.*)", "destination": "/api/vercel_app.py" }
+  ],
+  "installCommand": "pip install -r requirements-vercel.txt",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
+  }
+}

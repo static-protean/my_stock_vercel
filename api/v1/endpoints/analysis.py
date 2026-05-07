@@ -25,7 +25,7 @@ from typing import Optional, Union, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from api.deps import get_config_dep
+from api._deps import get_config_dep
 from api.v1.schemas.analysis import (
     AnalyzeRequest,
     AnalysisResultResponse,

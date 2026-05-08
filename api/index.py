@@ -134,7 +134,7 @@ app.add_middleware(
 )
 
 STATIC_DIR = Path(_project_root) / "static"
-TELEGRAM_LOGIN_PAGE = Path(__file__).parent / "telegram_login.html"
+TELEGRAM_LOGIN_PAGE = Path(__file__).parent.parent / "telegram_login.html"
 
 
 # ────────────────────────────────────────────────────────────────
